@@ -1,6 +1,18 @@
+# Python
 config.py
 *.pkl
 __pycache__/
 *.pyc
 .env
 *.db
+
+# Node / React
+node_modules/
+mindease-frontend/node_modules/
+mindease-frontend/.vite/
+mindease-frontend/dist/
+mindease-frontend/package-lock.json
+.vite/
+
+# VS Code
+.vscode/
