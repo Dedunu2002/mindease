@@ -1,0 +1,136 @@
+/* src/styles/Navbar.css */
+
+.navbar {
+  background:  var(--teal-darker);
+  box-shadow:  0 2px 8px rgba(0,0,0,0.2);
+  position:    sticky;
+  top:         0;
+  z-index:     1000;
+}
+
+.navbar-inner {
+  max-width:   1100px;
+  margin:      0 auto;
+  padding:     0 20px;
+  height:      60px;
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+}
+
+/* Brand / Logo */
+.navbar-brand {
+  font-size:   20px;
+  font-weight: 700;
+  color:       white;
+  text-decoration: none;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+.navbar-brand:hover { color: var(--mint); }
+
+/* Nav links — desktop */
+.navbar-links {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+  flex:        1;
+  flex-wrap:   wrap;
+}
+.navbar-links a {
+  color:         #CCEEEE;
+  text-decoration: none;
+  padding:       6px 12px;
+  border-radius: var(--radius-sm);
+  font-size:     14px;
+  font-weight:   500;
+  transition:    background 0.15s, color 0.15s;
+  white-space:   nowrap;
+}
+.navbar-links a:hover,
+.navbar-links a.active {
+  background: rgba(255,255,255,0.12);
+  color:      white;
+}
+
+/* Right side */
+.navbar-right {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.navbar-user {
+  font-size:  13px;
+  color:      #9FE1CB;
+  display:    flex;
+  align-items: center;
+  gap:        7px;
+  white-space: nowrap;
+}
+.navbar-user strong { color: white; }
+
+/* Role badge */
+.role-tag {
+  font-size:     10px;
+  font-weight:   600;
+  padding:       2px 8px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+.role-student    { background: var(--teal);       color: white; }
+.role-counsellor { background: #0F5040;            color: #9FE1CB; }
+.role-admin      { background: #7B5EA7;            color: white; }
+
+/* Logout button */
+.btn-logout {
+  background:    rgba(255,255,255,0.12);
+  color:         white;
+  border:        1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-sm);
+  padding:       6px 14px;
+  font-size:     13px;
+  cursor:        pointer;
+  transition:    background 0.15s;
+  white-space:   nowrap;
+}
+.btn-logout:hover { background: rgba(226,75,74,0.7); border-color: var(--red); }
+
+/* Hamburger — hidden on desktop */
+.navbar-hamburger {
+  display:    none;
+  background: transparent;
+  border:     none;
+  color:      white;
+  font-size:  22px;
+  cursor:     pointer;
+  margin-left: auto;
+}
+
+/* Mobile menu */
+.navbar-mobile {
+  background:  var(--teal-darker);
+  padding:     12px 20px 16px;
+  display:     flex;
+  flex-direction: column;
+  gap:         6px;
+  border-top:  1px solid rgba(255,255,255,0.1);
+}
+.navbar-mobile a {
+  color:         #CCEEEE;
+  text-decoration: none;
+  padding:       10px 12px;
+  border-radius: var(--radius-sm);
+  font-size:     15px;
+  font-weight:   500;
+}
+.navbar-mobile a:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar-links,
+  .navbar-right      { display: none; }
+  .navbar-hamburger  { display: block; }
+}

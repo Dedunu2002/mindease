@@ -1,0 +1,111 @@
+/* src/styles/SOSButton.css */
+
+/* Floating button — fixed bottom right of screen */
+.sos-btn {
+  position:      fixed;
+  bottom:        28px;
+  right:         28px;
+  z-index:       999;
+  background:    var(--red);
+  color:         white;
+  border:        none;
+  border-radius: 50px;
+  padding:       13px 22px;
+  font-size:     15px;
+  font-weight:   700;
+  cursor:        pointer;
+  box-shadow:    0 4px 20px rgba(226,75,74,0.45);
+  animation:     sos-pulse 2.5s infinite;
+  transition:    transform 0.15s, box-shadow 0.15s;
+}
+.sos-btn:hover {
+  transform:  scale(1.06);
+  box-shadow: 0 6px 28px rgba(226,75,74,0.6);
+}
+
+/* Subtle pulse animation to draw attention */
+@keyframes sos-pulse {
+  0%,100% { box-shadow: 0 4px 20px rgba(226,75,74,0.45); }
+  50%     { box-shadow: 0 4px 28px rgba(226,75,74,0.75); }
+}
+
+/* Dark overlay behind modal */
+.sos-overlay {
+  position:   fixed;
+  inset:      0;
+  background: rgba(0,0,0,0.55);
+  z-index:    1100;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  padding:    20px;
+}
+
+/* Modal card */
+.sos-modal {
+  background:    white;
+  border-radius: var(--radius-xl);
+  padding:       32px;
+  max-width:     440px;
+  width:         100%;
+  box-shadow:    var(--shadow-lg);
+}
+
+.sos-modal-header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  margin-bottom:   16px;
+}
+.sos-modal-header h2 { font-size:20px; color:var(--dark); }
+
+.sos-close {
+  background:    transparent;
+  border:        none;
+  font-size:     20px;
+  cursor:        pointer;
+  color:         var(--gray-500);
+  line-height:   1;
+}
+.sos-close:hover { color: var(--dark); }
+
+.sos-sending { color:var(--gray-500); font-size:14px; margin-bottom:10px; }
+.sos-sent    { color:var(--green);    font-size:14px; font-weight:500; margin-bottom:10px; }
+
+.sos-resources h3 {
+  font-size:     15px;
+  font-weight:   600;
+  color:         var(--gray-700);
+  margin-bottom: 14px;
+  padding-top:   12px;
+  border-top:    1px solid var(--gray-200);
+}
+
+.sos-hotline {
+  display:       flex;
+  gap:           14px;
+  align-items:   flex-start;
+  margin-bottom: 14px;
+}
+.sos-icon    { font-size:26px; flex-shrink:0; }
+.sos-hotline strong { font-size:14px; color:var(--dark); display:block; }
+.sos-hotline p      { font-size:13px; color:var(--gray-500); margin:2px 0; }
+
+.sos-number {
+  font-size:   22px;
+  font-weight: 700;
+  color:       var(--red);
+  text-decoration: none;
+  display:     block;
+  margin-top:  4px;
+}
+.sos-number:hover { text-decoration: underline; }
+
+.sos-note {
+  font-size:     12px;
+  color:         var(--gray-500);
+  font-style:    italic;
+  margin-top:    14px;
+  padding-top:   12px;
+  border-top:    1px solid var(--gray-200);
+}
