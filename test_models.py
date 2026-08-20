@@ -1,57 +1,132 @@
-# test_models.py — Run this in VS Code: python test_models.py
-# Tests both AI models to confirm they load and predict correctly
+import joblib
+import json
+import pandas as pd
 
-import joblib, numpy as np, re, json
 
-print("=" * 50)
+print("=" * 55)
 print("  MINDEASEAI MODEL VERIFICATION TEST")
-print("=" * 50 + "\n")
+print("=" * 55)
 
-# ── Test AI Model 1: Risk Classifier ──────────────────────────
-print("Loading AI Model 1 (Risk Classifier)...")
-risk_model   = joblib.load('ai_models/risk_model.pkl')
-risk_encoder = joblib.load('ai_models/risk_encoder.pkl')
-print(f"✅ Loaded — labels: {list(risk_encoder.classes_)}")
 
-# Test prediction (Sleep, Study, Social, Anxiety, Stress, Depression, Burnout)
-sample_healthy  = np.array([[8, 4, 4, 2, 2, 1, 15]])
-sample_stressed = np.array([[4, 12, 1, 8, 9, 7, 80]])
+# ============================================================
+# AI MODEL 1 — RISK CLASSIFIER
+# ============================================================
 
-pred1 = risk_encoder.inverse_transform(risk_model.predict(sample_healthy))[0]
-pred2 = risk_encoder.inverse_transform(risk_model.predict(sample_stressed))[0]
+print("\nLoading AI Model 1 (Risk Classifier)...")
 
-print(f"   Healthy student  → {pred1}  (expected: Good)")
-print(f"   Stressed student → {pred2}  (expected: Poor)")
+risk_model = joblib.load(
+    "ai_models/mindease_risk_model_final.pkl"
+)
 
-print()
+risk_encoder = joblib.load(
+    "ai_models/mindease_risk_label_encoder.pkl"
+)
 
-# ── Test AI Model 2: Sentiment Analyser ───────────────────────
-print("Loading AI Model 2 (Sentiment Analyser)...")
-sentiment_model = joblib.load('ai_models/sentiment_model.pkl')
-tfidf           = joblib.load('ai_models/tfidf_vectorizer.pkl')
-print(f"✅ Loaded — emotions: {list(sentiment_model.classes_)}")
+feature_encoders = joblib.load(
+    "ai_models/mindease_risk_feature_encoders.pkl"
+)
 
-# Load mood group mapping
-with open('ai_models/mood_map.json') as f:
-    mood_map = json.load(f)
+with open(
+    "ai_models/mindease_risk_features.json",
+    "r"
+) as f:
+    risk_features = json.load(f)
 
-def test_sentiment(text, expected):
-    clean = re.sub(r'[^a-z\s]', '', text.lower()).strip()
-    vec   = tfidf.transform([clean])
-    emotion = sentiment_model.predict(vec)[0]
-    mood    = mood_map.get(emotion, 'Neutral')
-    status  = "✅" if expected in emotion or expected == mood else "⚠"
-    print(f"   {status} \"{text[:45]:<45}\" → {emotion:8} ({mood})")
 
-test_sentiment("I feel so happy and excited today",          "happy")
-test_sentiment("I am very sad and nothing is going right",     "sadness")
-test_sentiment("I am so angry at my lecturer",                 "anger")
-test_sentiment("I am scared of failing my exams",              "fear")
-test_sentiment("I love my friends and feel supported",          "love")
+print("✅ Risk model loaded")
+print("✅ Label encoder loaded")
+print("✅ Feature encoders loaded")
 
-print("\n✅ Both AI models are ready for MindEase!")
-print("\nYour ai_models/ folder should contain:")
-import os
-for f in os.listdir('ai_models'):
-    size = os.path.getsize(f'ai_models/{f}') / 1024
-    print(f"   {f:<35} {size:>7.1f} KB")
+print("Labels:", risk_encoder.classes_)
+print("Features:", risk_features)
+
+
+# ============================================================
+# TEST INPUT
+# ============================================================
+
+sample = {
+    "age": 22,
+    "gender": "Male",
+    "academic_year": 3,
+    "study_hours_per_day": 4,
+    "exam_pressure": 3,
+    "academic_performance": 75,
+    "stress_level": 2,
+    "sleep_hours": 7,
+    "physical_activity": 4,
+    "social_support": 7,
+    "screen_time": 3,
+    "internet_usage": 5,
+    "financial_stress": 2,
+    "family_expectation": 3
+}
+
+
+# ============================================================
+# CREATE DATAFRAME IN EXACT FEATURE ORDER
+# ============================================================
+
+row = {
+    col: sample.get(col)
+    for col in risk_features
+}
+
+df = pd.DataFrame([row])
+
+
+print("\nInput before encoding:")
+print(df)
+
+
+# ============================================================
+# APPLY SAVED FEATURE ENCODERS
+# ============================================================
+
+for col, encoder in feature_encoders.items():
+
+    if col in df.columns:
+
+        value = str(df.at[0, col])
+
+        if value in encoder.classes_:
+
+            df[col] = encoder.transform([value])
+
+        else:
+
+            print(
+                f"⚠️ Unknown value '{value}' "
+                f"for feature '{col}'"
+            )
+
+            df[col] = 0
+
+
+print("\nInput after encoding:")
+print(df)
+
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+prediction = risk_model.predict(df)[0]
+
+risk_label = risk_encoder.inverse_transform(
+    [prediction]
+)[0]
+
+
+# ============================================================
+# RESULT
+# ============================================================
+
+print("\n" + "=" * 55)
+print("  MODEL 1 RESULT")
+print("=" * 55)
+
+print("Prediction number :", prediction)
+print("Risk level        :", risk_label)
+
+print("\n✅ AI Model 1 test completed successfully!")

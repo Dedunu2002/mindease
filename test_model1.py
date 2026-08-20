@@ -7,8 +7,8 @@ import numpy as np
 print("Loading AI Model 1...")
 
 # Load both saved files
-model   = joblib.load('ai_models/risk_model.pkl')
-encoder = joblib.load('ai_models/risk_encoder.pkl')
+model   = joblib.load('ai_models/mindease_risk_model_final.pkl')
+encoder = joblib.load('ai_models/mindease_risk_label_encoder.pkl')
 
 print("✅ Model loaded successfully")
 print(f"   Model type    : {type(model).__name__}")
