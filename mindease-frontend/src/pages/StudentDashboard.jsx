@@ -1,4 +1,5 @@
 // src/pages/StudentDashboard.jsx
+import StudentSidebar from '../components/StudentSidebar'
 import { useState, useEffect } from 'react'
 import { Link }               from 'react-router-dom'
 import { useAuth }            from '../context/AuthContext'
@@ -45,7 +46,11 @@ export default function StudentDashboard() {
   }[risk] || 'badge-good')
 
   return (
-    <div className="page-wrapper">
+  <div className="student-layout">
+
+    <StudentSidebar />
+
+    <main className="student-main">
 
       {/* Welcome header */}
       <div className="dash-header">
@@ -155,6 +160,7 @@ export default function StudentDashboard() {
         </Link>
 
       </div>
+      </main>
     </div>
   )
 }

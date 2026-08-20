@@ -1,5 +1,18 @@
 /* src/styles/StudentDashboard.css */
+.student-layout {
+  min-height: 100vh;
+  background: #FBFCFB;
+}
 
+.student-main {
+  min-height: 100vh;
+
+  margin-left: 250px;
+
+  padding: 34px 40px;
+
+  max-width: 1500px;
+}
 /* Header row — welcome text + check-in button */
 .dash-header {
   display:         flex;
@@ -73,7 +86,29 @@
 .feature-card p  { font-size:13px; color:var(--gray-500); margin:0; line-height:1.5; flex:1; }
 .feature-link    { font-size:13px; color:var(--teal); font-weight:500; margin-top:auto; }
 
-@media (max-width:600px) {
-  .dash-header { flex-direction:column; align-items:flex-start; }
-  .dash-grid   { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+
+  .student-main {
+    margin-left: 220px;
+    padding: 28px;
+  }
+
+}
+
+@media (max-width: 768px) {
+
+  .student-main {
+    margin-left: 72px;
+    padding: 22px 18px;
+  }
+
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
 }

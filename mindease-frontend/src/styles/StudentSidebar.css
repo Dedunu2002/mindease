@@ -1,0 +1,349 @@
+.student-sidebar {
+  width: 250px;
+  height: 100vh;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #FFFFFF;
+  border-right: 1px solid #EEF2EF;
+
+  z-index: 1000;
+
+  padding: 22px 14px;
+
+  box-shadow: 4px 0 24px rgba(74, 96, 80, 0.04);
+}
+
+
+/* ─────────────────────────────────────────
+   BRAND
+───────────────────────────────────────── */
+
+.student-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  padding: 4px 10px 24px;
+
+  border-bottom: 1px solid #F0F3F1;
+}
+
+.sidebar-brand-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #DFF3E4;
+  border-radius: 13px;
+
+  font-size: 21px;
+}
+
+.sidebar-brand-name {
+  font-size: 18px;
+  font-weight: 750;
+
+  color: #315C47;
+
+  letter-spacing: -0.3px;
+}
+
+.sidebar-brand-subtitle {
+  margin-top: 1px;
+
+  color: #8A9890;
+
+  font-size: 10.5px;
+}
+
+
+/* ─────────────────────────────────────────
+   NAVIGATION
+───────────────────────────────────────── */
+
+.student-sidebar-nav {
+  flex: 1;
+
+  padding-top: 22px;
+
+  overflow-y: auto;
+}
+
+.sidebar-section-title {
+  padding: 0 11px;
+  margin: 18px 0 8px;
+
+  color: #A0AAA4;
+
+  font-size: 9.5px;
+  font-weight: 750;
+
+  letter-spacing: 1.2px;
+}
+
+.sidebar-section-title:first-child {
+  margin-top: 0;
+}
+
+
+.student-nav-item {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  width: 100%;
+
+  padding: 10px 12px;
+
+  margin-bottom: 3px;
+
+  border-radius: 11px;
+
+  text-decoration: none;
+
+  color: #65726B;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.student-nav-item:hover {
+  background: #F5FAF6;
+  color: #3F6951;
+
+  transform: translateX(2px);
+}
+
+.student-nav-item.active {
+  background: #DFF3E4;
+  color: #315C47;
+
+  font-weight: 650;
+}
+
+.student-nav-item.active::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+
+  width: 3px;
+
+  background: #75A985;
+
+  border-radius: 0 5px 5px 0;
+}
+
+.student-nav-icon {
+  width: 26px;
+  height: 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  font-size: 16px;
+}
+
+
+/* ─────────────────────────────────────────
+   BOTTOM USER
+───────────────────────────────────────── */
+
+.student-sidebar-bottom {
+  padding-top: 14px;
+
+  border-top: 1px solid #F0F3F1;
+}
+
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 10px;
+
+  background: #FAFCFA;
+
+  border: 1px solid #EEF2EF;
+
+  border-radius: 13px;
+}
+
+.sidebar-avatar {
+  width: 35px;
+  height: 35px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #FCE4EC;
+  color: #9A5368;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-user-info strong {
+  color: #3B4740;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-info span {
+  color: #9AA49E;
+
+  font-size: 10px;
+
+  margin-top: 1px;
+}
+
+.sidebar-logout {
+  width: 30px;
+  height: 30px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+
+  color: #9AA49E;
+
+  font-size: 17px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-logout:hover {
+  background: #FCE4EC;
+  color: #A85A70;
+}
+
+
+/* ─────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────── */
+
+.student-sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.student-sidebar-nav::-webkit-scrollbar-thumb {
+  background: #DCE8DF;
+  border-radius: 10px;
+}
+
+
+/* ─────────────────────────────────────────
+   TABLET
+───────────────────────────────────────── */
+
+@media (max-width: 900px) {
+
+  .student-sidebar {
+    width: 220px;
+  }
+
+}
+
+
+/* ─────────────────────────────────────────
+   MOBILE
+───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+
+  .student-sidebar {
+    width: 72px;
+
+    padding: 18px 10px;
+  }
+
+  .student-sidebar-brand {
+    justify-content: center;
+
+    padding: 0 0 20px;
+  }
+
+  .sidebar-brand-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sidebar-brand-name,
+  .sidebar-brand-subtitle,
+  .sidebar-section-title,
+  .student-nav-item span:not(.student-nav-icon),
+  .sidebar-user-info,
+  .sidebar-logout {
+    display: none;
+  }
+
+  .student-nav-item {
+    justify-content: center;
+
+    padding: 10px;
+  }
+
+  .student-nav-item.active::before {
+    left: -10px;
+  }
+
+  .student-nav-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sidebar-user-card {
+    justify-content: center;
+
+    padding: 7px;
+  }
+
+}
