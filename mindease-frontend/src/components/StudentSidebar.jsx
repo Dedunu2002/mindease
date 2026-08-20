@@ -11,157 +11,100 @@ export default function StudentSidebar() {
     navigate('/login')
   }
 
+  const firstName = currentUser?.name?.split(' ')[0] || 'Student'
+  const initial = firstName.charAt(0).toUpperCase()
+
+  const navItem = (to, icon, label, extraClass = '') => (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `student-nav-item ${isActive ? 'active' : ''} ${extraClass}`
+      }
+    >
+      <span className="student-nav-icon">{icon}</span>
+      <span>{label}</span>
+    </NavLink>
+  )
+
   return (
     <aside className="student-sidebar">
 
       {/* Brand */}
-      <div className="student-sidebar-brand">
-        <div className="sidebar-brand-icon">🧠</div>
+      <div className="student-brand">
+        <div className="student-brand-icon">
+          🧠
+        </div>
 
-        <div>
-          <div className="sidebar-brand-name">MindEase</div>
-          <div className="sidebar-brand-subtitle">
+        <div className="student-brand-text">
+          <div className="student-brand-name">MindEase</div>
+          <div className="student-brand-tagline">
             Your space to breathe
           </div>
         </div>
       </div>
 
-
       {/* Navigation */}
       <nav className="student-sidebar-nav">
 
-        <div className="sidebar-section-title">
-          MAIN
-        </div>
+        <div className="sidebar-label">MAIN</div>
 
-        <NavLink
-          to="/student-dashboard"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">🏠</span>
-          <span>Dashboard</span>
-        </NavLink>
+        {navItem('/student-dashboard', '⌂', 'Dashboard')}
+        {navItem('/checkin', '💛', 'My Mood')}
+        {navItem('/insights', '◒', 'My Insights')}
+        {navItem('/journal', '✎', 'Journal')}
+        {navItem('/chat', '✦', 'MindBot')}
 
-        <NavLink
-          to="/checkin"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon mood-icon">💛</span>
-          <span>My Mood</span>
-        </NavLink>
-
-        <NavLink
-          to="/journal"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">📝</span>
-          <span>Journal</span>
-        </NavLink>
-
-        <NavLink
-          to="/chat"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">🤖</span>
-          <span>MindBot</span>
-        </NavLink>
-
-
-        <div className="sidebar-section-title">
+        <div className="sidebar-label sidebar-label-spaced">
           SELF-CARE
         </div>
 
-        <NavLink
-          to="/exercises"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">🌸</span>
-          <span>Wellness Exercises</span>
-        </NavLink>
+        {navItem('/exercises', '🌿', 'Wellness')}
+        {navItem('/goals', '◎', 'My Goals')}
+        {navItem('/resources', '▣', 'Resources')}
 
-        <NavLink
-          to="/goals"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">🎯</span>
-          <span>My Goals</span>
-        </NavLink>
-
-        <NavLink
-          to="/resources"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">📚</span>
-          <span>Resources</span>
-        </NavLink>
-
-
-        <div className="sidebar-section-title">
+        <div className="sidebar-label sidebar-label-spaced">
           SUPPORT
         </div>
 
-        <NavLink
-          to="/booking"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">🌿</span>
-          <span>Counsellor</span>
-        </NavLink>
-
-        <NavLink
-          to="/community"
-          className={({ isActive }) =>
-            `student-nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          <span className="student-nav-icon">🤝</span>
-          <span>Community</span>
-        </NavLink>
+        {navItem('/booking', '♡', 'Counsellor')}
+        {navItem('/community', '♧', 'Community')}
 
       </nav>
 
+      {/* Bottom profile */}
+      <div className="student-sidebar-footer">
 
-      {/* Bottom user area */}
-      <div className="student-sidebar-bottom">
-
-        <div className="sidebar-user-card">
-
+        <NavLink
+          to="/profile"
+          className="sidebar-profile-card"
+        >
           <div className="sidebar-avatar">
-            {currentUser?.name?.charAt(0)?.toUpperCase() || 'A'}
+            {initial}
           </div>
 
-          <div className="sidebar-user-info">
-            <strong>
-              {currentUser?.name?.split(' ')[0] || 'Student'}
-            </strong>
-
+          <div className="sidebar-profile-info">
+            <strong>{firstName}</strong>
             <span>Student</span>
           </div>
 
-          <button
-            className="sidebar-logout"
-            onClick={handleLogout}
-            title="Logout"
-          >
-            ↪
-          </button>
+          <span className="sidebar-profile-arrow">›</span>
+        </NavLink>
 
+        <div className="sidebar-account-links">
+          <NavLink to="/profile">
+            <span>◉</span>
+            Profile
+          </NavLink>
+
+          <NavLink to="/profile/edit">
+            <span>✎</span>
+            Edit profile
+          </NavLink>
+
+          <button onClick={handleLogout}>
+            <span>↪</span>
+            Logout
+          </button>
         </div>
 
       </div>
