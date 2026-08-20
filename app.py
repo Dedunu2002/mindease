@@ -130,8 +130,8 @@ import numpy as np
 from flask import request, jsonify
 
 # Load at app startup (put this near the top of app.py)
-risk_model   = joblib.load('ai_models/risk_model.pkl')
-risk_encoder = joblib.load('ai_models/risk_encoder.pkl')
+risk_model   = joblib.load('ai_models/mindease_risk_model_final.pkl')
+risk_encoder = joblib.load('ai_models/mindease_risk_label_encoder.pkl')
 
 # ── Prediction helper function ─────────────────────────────────
 def predict_mental_health_risk(sleep, study, social,
