@@ -6,45 +6,56 @@ import SOSButton from '../components/SOSButton'
 
 import '../styles/StudentDashboard.css'
 
-const API = 'http://127.0.0.1:5000/api'
-
+const API = 'http://localhost:5000/api'
 export default function StudentDashboard() {
   const navigate = useNavigate()
 
   const [streak, setStreak] = useState(0)
-  const [latestCheckin, setLatestCheckin] = useState(null)
-  const [loading, setLoading] = useState(true)
+const [latestCheckin, setLatestCheckin] = useState(null)
+const [checkinHistory, setCheckinHistory] = useState([])
+const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadDashboardData()
   }, [])
 
   const loadDashboardData = async () => {
-    try {
-      const [streakRes, checkinRes] = await Promise.all([
-        fetch(`${API}/streak`, {
-          credentials: 'include'
-        }),
-        fetch(`${API}/checkins/latest`, {
-          credentials: 'include'
-        })
-      ])
+  try {
+    const [streakRes, latestRes, historyRes] = await Promise.all([
+      fetch(`${API}/streak`, {
+        credentials: 'include'
+      }),
 
-      if (streakRes.ok) {
-        const streakData = await streakRes.json()
-        setStreak(streakData.streak || 0)
-      }
+      fetch(`${API}/checkins/latest`, {
+        credentials: 'include'
+      }),
 
-      if (checkinRes.ok) {
-        const checkinData = await checkinRes.json()
-        setLatestCheckin(checkinData)
-      }
-    } catch (error) {
-      console.error('Dashboard loading error:', error)
-    } finally {
-      setLoading(false)
+      fetch(`${API}/checkins/history`, {
+        credentials: 'include'
+      })
+    ])
+
+    if (streakRes.ok) {
+      const streakData = await streakRes.json()
+      setStreak(streakData.streak || 0)
     }
+
+    if (latestRes.ok) {
+      const latestData = await latestRes.json()
+      setLatestCheckin(latestData)
+    }
+
+    if (historyRes.ok) {
+      const historyData = await historyRes.json()
+      setCheckinHistory(historyData.checkins || [])
+    }
+
+  } catch (error) {
+    console.error('Dashboard loading error:', error)
+  } finally {
+    setLoading(false)
   }
+}
 
   const getRiskText = () => {
     if (!latestCheckin) return 'Not yet assessed'
@@ -71,7 +82,43 @@ export default function StudentDashboard() {
     month: 'long',
     day: 'numeric'
   })
+  const getIndicatorValue = (field, defaultValue = 0) => {
+  if (!latestCheckin) return defaultValue
 
+  const value = Number(latestCheckin[field])
+
+  if (Number.isNaN(value)) {
+    return defaultValue
+  }
+
+  return value
+}
+
+const stress = getIndicatorValue('stress_level')
+const sleep = getIndicatorValue('sleep_hours')
+const activity = getIndicatorValue('physical_activity')
+const socialSupport = getIndicatorValue('social_support')
+
+// Convert the latest check-in values into dashboard percentages
+const stressPercentage = Math.min(
+  100,
+  Math.round((stress / 5) * 100)
+)
+
+const sleepPercentage = Math.min(
+  100,
+  Math.round((sleep / 8) * 100)
+)
+
+const activityPercentage = Math.min(
+  100,
+  Math.round((activity / 7) * 100)
+)
+
+const socialPercentage = Math.min(
+  100,
+  Math.round((socialSupport / 10) * 100)
+)
   return (
     <div className="student-dashboard">
 
@@ -238,13 +285,49 @@ export default function StudentDashboard() {
                 <div className="chart-line chart-line-three" />
 
                 <div className="chart-points">
-                  <span style={{ left: '8%', bottom: '45%' }}>●</span>
-                  <span style={{ left: '23%', bottom: '58%' }}>●</span>
-                  <span style={{ left: '39%', bottom: '51%' }}>●</span>
-                  <span style={{ left: '55%', bottom: '68%' }}>●</span>
-                  <span style={{ left: '71%', bottom: '62%' }}>●</span>
-                  <span style={{ left: '87%', bottom: '78%' }}>●</span>
-                </div>
+
+  {checkinHistory.length > 0 ? (
+    checkinHistory
+      .slice()
+      .reverse()
+      .map((item, index) => {
+
+        const total =
+          checkinHistory.length > 1
+            ? checkinHistory.length - 1
+            : 1
+
+        const left =
+          checkinHistory.length === 1
+            ? 50
+            : (index / total) * 84 + 8
+
+        const stressValue =
+          Number(item.stress_level) || 0
+
+        const bottom =
+          90 - (stressValue / 5) * 65
+
+        return (
+          <span
+            key={item.id}
+            style={{
+              left: `${left}%`,
+              bottom: `${bottom}%`
+            }}
+            title={`${item.date} · Stress ${stressValue}/5`}
+          >
+            ●
+          </span>
+        )
+      })
+  ) : (
+    <div className="chart-empty">
+      No check-in data yet
+    </div>
+  )}
+
+</div>
 
               </div>
 
@@ -260,14 +343,17 @@ export default function StudentDashboard() {
             </div>
 
             <div className="chart-note">
-              Complete more check-ins to see your personal trend.
-            </div>
+  {checkinHistory.length < 2
+    ? 'Complete more check-ins to build your personal wellbeing trend.'
+    : `${checkinHistory.length} check-ins recorded. Your trend is based on your recent responses.`
+  }
+</div>
 
           </article>
 
 
           {/* Calendar */}
-          <MiniCalendar />
+          <MiniCalendar checkinHistory={checkinHistory} />
 
         </section>
 
@@ -383,28 +469,33 @@ export default function StudentDashboard() {
             <div className="indicator-list">
 
               <Indicator
-                icon="😌"
-                label="Stress"
-                value={40}
-              />
+  icon="😌"
+  label="Stress"
+  value={stressPercentage}
+  displayValue={`${stress}/5`}
+  inverse
+/>
 
-              <Indicator
-                icon="😴"
-                label="Sleep"
-                value={78}
-              />
+<Indicator
+  icon="😴"
+  label="Sleep"
+  value={sleepPercentage}
+  displayValue={`${sleep} hrs`}
+/>
 
-              <Indicator
-                icon="⚡"
-                label="Energy"
-                value={72}
-              />
+<Indicator
+  icon="🏃"
+  label="Physical activity"
+  value={activityPercentage}
+  displayValue={`${activity}/7`}
+/>
 
-              <Indicator
-                icon="🏃"
-                label="Activity"
-                value={65}
-              />
+<Indicator
+  icon="🤝"
+  label="Social support"
+  value={socialPercentage}
+  displayValue={`${socialSupport}/10`}
+/>
 
             </div>
 
@@ -512,7 +603,17 @@ export default function StudentDashboard() {
    SMALL COMPONENTS
 ========================================= */
 
-function Indicator({ icon, label, value }) {
+function Indicator({
+  icon,
+  label,
+  value,
+  displayValue,
+  inverse = false
+}) {
+  const progressWidth = inverse
+    ? 100 - value
+    : value
+
   return (
     <div className="indicator">
 
@@ -523,21 +624,26 @@ function Indicator({ icon, label, value }) {
           {label}
         </div>
 
-        <strong>{value}%</strong>
+        <strong>{displayValue}</strong>
 
       </div>
 
       <div className="indicator-track">
+
         <div
-          className="indicator-progress"
-          style={{ width: `${value}%` }}
+          className={`indicator-progress ${
+            inverse ? 'indicator-inverse' : ''
+          }`}
+          style={{
+            width: `${progressWidth}%`
+          }}
         />
+
       </div>
 
     </div>
   )
 }
-
 
 function ResourceCard({
   icon,
@@ -583,7 +689,7 @@ function ResourceCard({
 }
 
 
-function MiniCalendar() {
+function MiniCalendar({ checkinHistory }) {
   const days = [
     '', '', '', '', '',
     1, 2,
@@ -593,6 +699,10 @@ function MiniCalendar() {
     24, 25, 26, 27, 28, 29, 30,
     31
   ]
+
+  const checkinDates = new Set(
+  checkinHistory.map(item => item.date)
+)
 
   return (
     <article className="dashboard-panel calendar-panel">
@@ -632,12 +742,15 @@ function MiniCalendar() {
           <div
             key={index}
             className={`calendar-day ${
-              day === 20 ? 'today' : ''
-            } ${
-              [18, 19].includes(day)
-                ? 'activity-day'
-                : ''
-            }`}
+  day === 20 ? 'today' : ''
+} ${
+  day &&
+  checkinDates.has(
+    `2026-08-${String(day).padStart(2, '0')}`
+  )
+    ? 'activity-day'
+    : ''
+}`}
           >
             {day}
           </div>

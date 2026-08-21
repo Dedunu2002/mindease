@@ -19,8 +19,14 @@ app.config.from_object(Config)
 
 # ── CORS — allows React (port 3000) to call Flask (port 5000) ─
 # Without this, the browser blocks requests between the two servers
-CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
-
+CORS(
+    app,
+    supports_credentials=True,
+    origins=[
+        "http://localhost:3000",
+        "http://localhost:3001"
+    ]
+)
 # ── Extensions ────────────────────────────────────────────────
 db   = SQLAlchemy(app)
 mail = Mail(app)
@@ -514,6 +520,80 @@ def checkin():
         db.session.commit()
 
         # ----------------------------------------------------
+        # UPDATE WELLNESS STREAK
+        # ----------------------------------------------------
+
+        user_id = session['user_id']
+
+        streak = Streak.query.filter_by(
+            user_id=user_id
+        ).first()
+
+        if not streak:
+            streak = Streak(
+                user_id=user_id,
+                current_streak=1,
+                longest_streak=1,
+                last_checkin_date=new_checkin.checkin_date,
+                badges='[]'
+            )
+
+            db.session.add(streak)
+
+        else:
+            today = new_checkin.checkin_date
+            last_date = streak.last_checkin_date
+
+            if last_date == today:
+                # Already checked in today
+                pass
+
+            elif last_date == today - timedelta(days=1):
+                # Consecutive day
+                streak.current_streak += 1
+                streak.last_checkin_date = today
+
+                if streak.current_streak > streak.longest_streak:
+                    streak.longest_streak = streak.current_streak
+
+            else:
+                # Streak broken
+                streak.current_streak = 1
+                streak.last_checkin_date = today
+
+        db.session.commit()
+
+        # ----------------------------------------------------
+        # RETURN RESULT TO REACT
+        # ----------------------------------------------------
+
+        return jsonify({
+            'message': 'Check-in submitted successfully',
+            'risk_result': risk_result,
+            'checkin': new_checkin.to_dict()
+        }), 201
+
+    except ValueError as e:
+
+        db.session.rollback()
+
+        return jsonify({
+            'error': 'Invalid input value',
+            'details': str(e)
+        }), 400
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        print('❌ Check-in error:', e)
+
+        return jsonify({
+            'error': 'Failed to process check-in',
+            'details': str(e)
+        }), 500
+ 
+        # ----------------------------------------------------
         # Return result to React
         # ----------------------------------------------------
 
@@ -542,6 +622,147 @@ def checkin():
             'error': 'Failed to process check-in',
             'details': str(e)
         }), 500
+
+    # ── Student Check-In History ────────────────────────────────
+
+@app.route('/api/checkins/history', methods=['GET'])
+@login_required
+def checkin_history():
+    try:
+        user_id = session['user_id']
+
+        checkins = (
+            CheckIn.query
+            .filter_by(user_id=user_id)
+            .order_by(CheckIn.checkin_date.desc(), CheckIn.id.desc())
+            .all()
+        )
+
+        history = []
+
+        for item in checkins:
+            history.append({
+                'id': item.id,
+                'user_id': item.user_id,
+                'date': (
+                    item.checkin_date.isoformat()
+                    if item.checkin_date else None
+                ),
+                'created_at': (
+                    item.created_at.isoformat()
+                    if item.created_at else None
+                ),
+
+                # AI result
+                'risk_result': item.risk_result,
+
+                # Wellbeing indicators
+                'stress_level': item.stress_level,
+                'sleep_hours': item.sleep_hours,
+                'physical_activity': item.physical_activity,
+                'social_support': item.social_support,
+
+                # Other useful dashboard data
+                'study_hours_per_day': item.study_hours_per_day,
+                'exam_pressure': item.exam_pressure,
+                'academic_performance': item.academic_performance,
+                'screen_time': item.screen_time,
+                'internet_usage': item.internet_usage,
+                'financial_stress': item.financial_stress,
+                'family_expectation': item.family_expectation
+            })
+
+        return jsonify({
+            'success': True,
+            'count': len(history),
+            'checkins': history
+        }), 200
+
+    except Exception as e:
+        print('❌ Check-in history error:', e)
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load check-in history',
+            'details': str(e)
+        }), 500
+
+    # ── Latest Student Check-In ───────────────────────────────────
+
+@app.route('/api/checkins/latest', methods=['GET'])
+@login_required
+def latest_checkin():
+    try:
+        user_id = session['user_id']
+
+        latest = (
+            CheckIn.query
+            .filter_by(user_id=user_id)
+            .order_by(
+                CheckIn.checkin_date.desc(),
+                CheckIn.id.desc()
+            )
+            .first()
+        )
+
+        if not latest:
+            return jsonify({
+                'success': True,
+                'checkin': None
+            }), 200
+
+        return jsonify({
+            'success': True,
+            'checkin': latest.to_dict()
+        }), 200
+
+    except Exception as e:
+        print('❌ Latest check-in error:', e)
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load latest check-in',
+            'details': str(e)
+        }), 500
+
+
+# ── Student Wellness Streak ───────────────────────────────────
+
+@app.route('/api/streak', methods=['GET'])
+@login_required
+def get_streak():
+    try:
+        user_id = session['user_id']
+
+        streak = Streak.query.filter_by(
+            user_id=user_id
+        ).first()
+
+        if not streak:
+            return jsonify({
+                'success': True,
+                'current_streak': 0,
+                'longest_streak': 0,
+                'badges': []
+            }), 200
+
+        return jsonify({
+            'success': True,
+            'current_streak': streak.current_streak,
+            'longest_streak': streak.longest_streak,
+            'badges': json.loads(streak.badges or '[]')
+        }), 200
+
+    except Exception as e:
+        print('❌ Streak error:', e)
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load streak',
+            'details': str(e)
+        }), 500
+
+    
 
 @app.route('/api/register', methods=['POST'])
 def register():
