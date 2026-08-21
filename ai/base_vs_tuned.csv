@@ -1,0 +1,8 @@
+Rank,Model,Base Accuracy,Tuned Accuracy,Improvement,Base F1,Tuned F1,Result
+1,LightGBM,0.8044,0.8165,0.0121,0.6199,0.6281,✅ Better
+2,Random Forest,0.7922,0.8116,0.0194,0.6196,0.6461,✅ Better
+3,XGBoost,0.8031,0.8111,0.008,0.6275,0.6275,✅ Better
+4,Logistic Regression,0.7991,0.7988,-0.0003,0.6174,0.6175,❌ Lower
+5,SVM,0.7801,0.7901,0.01,0.6057,0.6003,✅ Better
+6,Decision Tree,0.7712,0.7782,0.007,0.5809,0.5835,✅ Better
+7,Naive Bayes,0.7646,0.7646,0.0,0.5825,0.5825,➡️ Same
