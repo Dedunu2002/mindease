@@ -5,9 +5,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_mail import Mail
 from config import Config
-from datetime import datetime, date
-import joblib, numpy as np, re, json, bcrypt
-
+from datetime import datetime, date, timedelta
+import joblib
+import numpy as np
+import pandas as pd
+import re
+import json
+import bcrypt
+from functools import wraps
 # ── Initialise app ────────────────────────────────────────────
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -21,15 +26,30 @@ db   = SQLAlchemy(app)
 mail = Mail(app)
 
 # ── Load AI models at startup ─────────────────────────────────
-risk_model      = joblib.load(Config.RISK_MODEL_PATH)
-risk_encoder    = joblib.load(Config.RISK_ENCODER_PATH)
+
+# AI Model 1 — Mental Health Risk Classifier
+risk_model = joblib.load(Config.RISK_MODEL_PATH)
+risk_encoder = joblib.load(Config.RISK_ENCODER_PATH)
+risk_feature_encoders = joblib.load(
+    Config.RISK_FEATURE_ENCODERS_PATH
+)
+
+with open(Config.RISK_FEATURES_PATH, "r") as f:
+    risk_features = json.load(f)
+
+
+# AI Model 2 — Journal Sentiment Analyzer
 sentiment_model = joblib.load(Config.SENTIMENT_MODEL_PATH)
-tfidf           = joblib.load(Config.TFIDF_PATH)
-with open(Config.MOOD_MAP_PATH) as f:
+tfidf = joblib.load(Config.TFIDF_PATH)
+
+with open(Config.MOOD_MAP_PATH, "r") as f:
     mood_map = json.load(f)
+
 
 print("✅ AI Model 1 loaded")
 print("✅ AI Model 2 loaded")
+print("✅ Risk feature encoders loaded")
+print("✅ Risk feature list loaded")
 
 # ════════════════════════════════════════════════════════════
 # DATABASE MODELS — all 7 tables
@@ -68,31 +88,80 @@ class User(db.Model):
 class CheckIn(db.Model):
     __tablename__ = 'checkins'
 
-    id               = db.Column(db.Integer, primary_key=True)
-    user_id          = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    # The 7 slider inputs from the check-in form
-    sleep_hours      = db.Column(db.Float, nullable=False)
-    study_hours      = db.Column(db.Float, nullable=False)
-    social_support   = db.Column(db.Float, nullable=False)
-    anxiety_level    = db.Column(db.Float, nullable=False)
-    stress_level     = db.Column(db.Float, nullable=False)
-    depression_score = db.Column(db.Float, nullable=False)
-    burnout_score    = db.Column(db.Float, nullable=False)
-    # AI Model 1 result
-    risk_result      = db.Column(db.String(20), nullable=False)
-    # risk_result: 'Good', 'Moderate', or 'Poor'
-    created_at       = db.Column(db.DateTime, default=datetime.utcnow)
-    checkin_date     = db.Column(db.Date, default=date.today)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        nullable=False
+    )
+
+    # ── AI Model 1 features ───────────────────────────────
+
+    age = db.Column(db.Integer, nullable=False)
+    gender = db.Column(db.String(30), nullable=False)
+    academic_year = db.Column(db.Integer, nullable=False)
+
+    study_hours_per_day = db.Column(db.Float, nullable=False)
+    exam_pressure = db.Column(db.Float, nullable=False)
+    academic_performance = db.Column(db.Float, nullable=False)
+    stress_level = db.Column(db.Float, nullable=False)
+    sleep_hours = db.Column(db.Float, nullable=False)
+    physical_activity = db.Column(db.Float, nullable=False)
+    social_support = db.Column(db.Float, nullable=False)
+    screen_time = db.Column(db.Float, nullable=False)
+    internet_usage = db.Column(db.Float, nullable=False)
+    financial_stress = db.Column(db.Float, nullable=False)
+    family_expectation = db.Column(db.Float, nullable=False)
+
+    # ── Prediction result ─────────────────────────────────
+
+    risk_result = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    checkin_date = db.Column(
+        db.Date,
+        default=date.today
+    )
 
     def to_dict(self):
         return {
-            'id':          self.id,
-            'risk_result': self.risk_result,
-            'date':        self.checkin_date.isoformat(),
-            'sleep_hours': self.sleep_hours,
-            'stress_level':self.stress_level,
-        }
+            'id': self.id,
+            'user_id': self.user_id,
 
+            'age': self.age,
+            'gender': self.gender,
+            'academic_year': self.academic_year,
+            'study_hours_per_day': self.study_hours_per_day,
+            'exam_pressure': self.exam_pressure,
+            'academic_performance': self.academic_performance,
+            'stress_level': self.stress_level,
+            'sleep_hours': self.sleep_hours,
+            'physical_activity': self.physical_activity,
+            'social_support': self.social_support,
+            'screen_time': self.screen_time,
+            'internet_usage': self.internet_usage,
+            'financial_stress': self.financial_stress,
+            'family_expectation': self.family_expectation,
+
+            'risk_result': self.risk_result,
+
+            'created_at': (
+                self.created_at.isoformat()
+                if self.created_at else None
+            ),
+
+            'checkin_date': (
+                self.checkin_date.isoformat()
+                if self.checkin_date else None
+            )
+        }
 
 # ── Table 3: Journal ──────────────────────────────────────────
 # Stores each daily journal entry with AI sentiment result
@@ -220,13 +289,44 @@ class CommunityPost(db.Model):
 # AI HELPER FUNCTIONS
 # ════════════════════════════════════════════════════════════
 
-def predict_risk(sleep, study, social, anxiety, stress, depression, burnout):
-    features  = np.array([[float(sleep), float(study), float(social),
-                           float(anxiety), float(stress),
-                           float(depression), float(burnout)]])
-    num       = risk_model.predict(features)[0]
-    label     = risk_encoder.inverse_transform([num])[0]
-    return label   # 'Good', 'Moderate', or 'Poor'
+# ── AI Model 1: Mental Health Risk Prediction ────────────────
+
+def predict_risk(form_data):
+    """
+    Predict mental-health risk using the exact 14 features
+    used when training the saved Risk Model.
+    """
+
+    # Create one row in the exact feature order
+    row = {
+        feature: form_data.get(feature)
+        for feature in risk_features
+    }
+
+    df = pd.DataFrame([row])
+
+    # Apply the SAME encoders used during model training
+    for column, encoder in risk_feature_encoders.items():
+
+        if column in df.columns:
+
+            value = str(df.at[0, column])
+
+            if value in encoder.classes_:
+                df[column] = encoder.transform([value])
+            else:
+                # Unknown categorical value
+                df[column] = 0
+
+    # Make prediction
+    prediction_number = risk_model.predict(df)[0]
+
+    # Convert numeric prediction to label
+    prediction_label = risk_encoder.inverse_transform(
+        [prediction_number]
+    )[0]
+
+    return prediction_label
 
 def predict_sentiment(text):
     clean   = re.sub(r'[^a-z\s]', '', str(text).lower()).strip()
@@ -248,7 +348,200 @@ def health():
         'version': '1.0.0'
     })
 
-# ── Add to app.py — below the /api/health route ───────────────
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Login required'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+# ── Check-In API ─────────────────────────────────────────────
+
+@app.route('/api/checkin', methods=['POST'])
+@login_required
+def checkin():
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                'error': 'No check-in data received'
+            }), 400
+
+        # ----------------------------------------------------
+        # Required AI model features
+        # ----------------------------------------------------
+
+        required_features = [
+            'age',
+            'gender',
+            'academic_year',
+            'study_hours_per_day',
+            'exam_pressure',
+            'academic_performance',
+            'stress_level',
+            'sleep_hours',
+            'physical_activity',
+            'social_support',
+            'screen_time',
+            'internet_usage',
+            'financial_stress',
+            'family_expectation'
+        ]
+
+        # Check that every required feature was submitted
+        missing_features = [
+            feature
+            for feature in required_features
+            if feature not in data
+        ]
+
+        if missing_features:
+            return jsonify({
+                'error': 'Missing required fields',
+                'missing_fields': missing_features
+            }), 400
+
+        # ----------------------------------------------------
+        # Convert values to the correct types
+        # ----------------------------------------------------
+
+        checkin_data = {
+            'age': int(data['age']),
+            'gender': str(data['gender']).strip(),
+            'academic_year': int(data['academic_year']),
+
+            'study_hours_per_day': float(
+                data['study_hours_per_day']
+            ),
+
+            'exam_pressure': float(
+                data['exam_pressure']
+            ),
+
+            'academic_performance': float(
+                data['academic_performance']
+            ),
+
+            'stress_level': float(
+                data['stress_level']
+            ),
+
+            'sleep_hours': float(
+                data['sleep_hours']
+            ),
+
+            'physical_activity': float(
+                data['physical_activity']
+            ),
+
+            'social_support': float(
+                data['social_support']
+            ),
+
+            'screen_time': float(
+                data['screen_time']
+            ),
+
+            'internet_usage': float(
+                data['internet_usage']
+            ),
+
+            'financial_stress': float(
+                data['financial_stress']
+            ),
+
+            'family_expectation': float(
+                data['family_expectation']
+            )
+        }
+
+        # ----------------------------------------------------
+        # AI MODEL 1 — Predict mental health risk
+        # ----------------------------------------------------
+
+        risk_result = predict_risk(checkin_data)
+
+        # ----------------------------------------------------
+        # Save check-in to database
+        # ----------------------------------------------------
+
+        new_checkin = CheckIn(
+            user_id=session['user_id'],
+
+            age=checkin_data['age'],
+            gender=checkin_data['gender'],
+            academic_year=checkin_data['academic_year'],
+
+            study_hours_per_day=
+                checkin_data['study_hours_per_day'],
+
+            exam_pressure=
+                checkin_data['exam_pressure'],
+
+            academic_performance=
+                checkin_data['academic_performance'],
+
+            stress_level=
+                checkin_data['stress_level'],
+
+            sleep_hours=
+                checkin_data['sleep_hours'],
+
+            physical_activity=
+                checkin_data['physical_activity'],
+
+            social_support=
+                checkin_data['social_support'],
+
+            screen_time=
+                checkin_data['screen_time'],
+
+            internet_usage=
+                checkin_data['internet_usage'],
+
+            financial_stress=
+                checkin_data['financial_stress'],
+
+            family_expectation=
+                checkin_data['family_expectation'],
+
+            risk_result=risk_result
+        )
+
+        db.session.add(new_checkin)
+        db.session.commit()
+
+        # ----------------------------------------------------
+        # Return result to React
+        # ----------------------------------------------------
+
+        return jsonify({
+            'message': 'Check-in submitted successfully',
+            'risk_result': risk_result,
+            'checkin': new_checkin.to_dict()
+        }), 201
+
+    except ValueError as e:
+
+        db.session.rollback()
+
+        return jsonify({
+            'error': 'Invalid input value',
+            'details': str(e)
+        }), 400
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        print('❌ Check-in error:', e)
+
+        return jsonify({
+            'error': 'Failed to process check-in',
+            'details': str(e)
+        }), 500
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -374,15 +667,9 @@ def me():
 
 # ── Helper: protect any route that needs login ────────────────
 # Use @login_required above any route that only logged-in users can access
-from functools import wraps
 
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({'error': 'Login required'}), 401
-        return f(*args, **kwargs)
-    return decorated
+
+
 
 # Example usage of @login_required (you will use this from Day 9 onwards):
 # @app.route('/api/checkin', methods=['POST'])
