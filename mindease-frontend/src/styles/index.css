@@ -2,6 +2,21 @@
 
 /* ── Colour palette ──────────────────────────────────────────── */
 :root {
+  
+  --student-bg: #FBFCFB;
+
+  --student-mood: #FFF4C2;
+  --student-wellbeing: #DFF3E4;
+  --student-selfcare: #FCE4EC;
+
+  --student-green: #6F9F7D;
+  --student-green-dark: #416A50;
+
+  --student-text: #34423A;
+  --student-muted: #87938C;
+
+  --student-border: #E9EEEA;
+
   --teal:        #1A7A5E;
   --teal-dark:   #0F5040;
   --teal-darker: #0A3D30;

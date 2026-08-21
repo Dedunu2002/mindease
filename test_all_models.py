@@ -16,8 +16,8 @@ print("   MINDEASEAI MODEL COMPLETE VERIFICATION")
 print("=" * 55)
 
 required_files = {
-    'ai_models/risk_model.pkl':       'AI Model 1 (Random Forest)',
-    'ai_models/risk_encoder.pkl':     'Model 1 Label Encoder',
+    'ai_models/mindease_risk_model_final.pkl':       'AI Model 1 (Random Forest)',
+    'ai_models/mindease_risk_label_encoder.pkl':     'Model 1 Label Encoder',
     'ai_models/sentiment_model.pkl':  'AI Model 2 (Logistic Regression)',
     'ai_models/tfidf_vectorizer.pkl': 'Model 2 TF-IDF Vectoriser',
     'ai_models/mood_map.json':        'Emotion → Mood Group Mapping',
@@ -42,8 +42,8 @@ if not all_present:
 # ─────────────────────────────────────────────────────────────
 print("\n[2] Loading all models...")
 
-risk_model      = joblib.load('ai_models/risk_model.pkl')
-risk_encoder    = joblib.load('ai_models/risk_encoder.pkl')
+risk_model      = joblib.load('ai_models/mindease_risk_model_final.pkl')
+risk_encoder    = joblib.load('ai_models/mindease_risk_label_encoder.pkl')
 sentiment_model = joblib.load('ai_models/sentiment_model.pkl')
 tfidf           = joblib.load('ai_models/tfidf_vectorizer.pkl')
 
