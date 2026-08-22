@@ -21,6 +21,7 @@ import Resources  from './pages/Resources'
 import Community  from './pages/Community'
 import Exercises  from './pages/Exercises'
 import Goals      from './pages/Goals'
+import WeeklySentiment from './pages/WeeklySentiment'
 
 // ── ProtectedRoute ────────────────────────────────────────────
 function ProtectedRoute({ children, allowedRoles }) {
@@ -72,6 +73,7 @@ export default function App() {
           ["/community",         <Community />],
           ["/exercises",         <Exercises />],
           ["/goals",             <Goals />],
+          ["/weekly-sentiment", <WeeklySentiment />],
         ].map(([path, element]) => (
           <Route key={path} path={path} element={
             <ProtectedRoute allowedRoles={['student']}>

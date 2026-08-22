@@ -290,6 +290,32 @@ class CommunityPost(db.Model):
             'created_at':self.created_at.isoformat()
         }
 
+# ── Add Resource model to the database models section ─────────
+class Resource(db.Model):
+    __tablename__ = 'resources'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    title       = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    category    = db.Column(db.String(50), nullable=False)
+    # category: 'Anxiety', 'Sleep', 'Stress', 'Motivation', 'Loneliness'
+    content     = db.Column(db.Text)       # longer article text
+    url         = db.Column(db.String(300)) # optional external link
+    icon        = db.Column(db.String(10), default='📄')
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id':          self.id,
+            'title':       self.title,
+            'description': self.description,
+            'category':    self.category,
+            'content':     self.content,
+            'url':         self.url,
+            'icon':        self.icon,
+        }
+
+
 
 # ════════════════════════════════════════════════════════════
 # AI HELPER FUNCTIONS
@@ -762,6 +788,258 @@ def get_streak():
             'details': str(e)
         }), 500
 
+
+# Add to app.py after the check-in routes
+
+@app.route('/api/journal', methods=['POST'])
+@login_required
+def save_journal():
+    user_id = session['user_id']
+    data    = request.get_json()
+    content = data.get('content', '').strip()
+
+    if not content:
+        return jsonify({'error': 'Journal entry cannot be empty'}), 400
+
+    if len(content) < 10:
+        return jsonify({'error': 'Please write at least a sentence'}), 400
+
+    # ── Run AI Model 2 — NO API, fully local ──────────────────────
+    # predict_sentiment() is defined in app.py from Day 6
+    # It calls tfidf.transform() then sentiment_model.predict()
+    emotion, mood_group = predict_sentiment(content)
+
+    # ── Save to Journal table ─────────────────────────────────────
+    entry = Journal(
+        user_id    = user_id,
+        content    = content,
+        emotion    = emotion,
+        mood_group = mood_group,
+    )
+    db.session.add(entry)
+    db.session.commit()
+
+    # Build a friendly response message based on detected emotion
+    messages = {
+        'joy':      'Great to hear you are feeling joyful today! 😊',
+        'love':     'Feeling loved and connected is wonderful 💚',
+        'surprise': 'Something surprised you today — interesting! 🤔',
+        'fear':     'It sounds like something is worrying you. Try a breathing exercise. 🌿',
+        'sadness':  'I hear that you are feeling down. Consider talking to someone. 💙',
+        'anger':    'Feeling frustrated is valid. Take a moment to breathe. 💨',
+    }
+    message = messages.get(emotion, 'Thank you for journalling today.')
+
+    return jsonify({
+        'id':         entry.id,
+        'emotion':    emotion,
+        'mood_group': mood_group,
+        'message':    message,
+    }), 201
+
+@app.route('/api/journals')
+@login_required
+def get_journals():
+    user_id  = session['user_id']
+    page     = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    journals = (Journal.query
+                .filter_by(user_id=user_id)
+                .order_by(Journal.created_at.desc())
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all())
+
+    total = Journal.query.filter_by(user_id=user_id).count()
+
+    return jsonify({
+        'entries':    [j.to_dict() for j in journals],
+        'total':      total,
+        'page':       page,
+        'has_more':   (page * per_page) < total,
+    }), 200
+
+
+@app.route('/api/sentiment-data')
+@login_required
+def sentiment_data():
+    user_id = session['user_id']
+    from datetime import datetime, timedelta
+
+    # Get last 7 days of journal entries
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    entries = (Journal.query
+               .filter(Journal.user_id == user_id,
+                       Journal.created_at >= seven_days_ago)
+               .order_by(Journal.created_at.asc())
+               .all())
+
+    if not entries:
+        return jsonify([]), 200
+
+    # Group by date and return one entry per day
+    # (last entry of each day wins if multiple exist)
+    by_date = {}
+    for e in entries:
+        d = e.created_at.strftime('%Y-%m-%d')
+        by_date[d] = {
+            'date':       d,
+            'emotion':    e.emotion,
+            'mood_group': e.mood_group,
+        }
+
+    return jsonify(list(by_date.values())), 200
+
+
+# Also add DELETE so student can remove an entry
+@app.route('/api/journal/<int:entry_id>', methods=['DELETE'])
+@login_required
+def delete_journal(entry_id):
+    user_id = session['user_id']
+    entry   = Journal.query.filter_by(id=entry_id, user_id=user_id).first()
+    if not entry:
+        return jsonify({'error': 'Entry not found'}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({'message': 'Entry deleted'}), 200
+
+
+# Add to app.py after existing journal routes
+
+@app.route('/api/sentiment-weekly')
+@login_required
+def sentiment_weekly():
+    user_id = session['user_id']
+    from datetime import datetime, timedelta
+
+    # Get last 7 days
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    entries = (Journal.query
+               .filter(Journal.user_id == user_id,
+                       Journal.created_at >= seven_days_ago)
+               .order_by(Journal.created_at.asc())
+               .all())
+
+    if not entries:
+        return jsonify({'entries': [], 'summary': {}}), 200
+
+    # One entry per day — last journal of each day
+    by_date = {}
+    for e in entries:
+        d = e.created_at.strftime('%Y-%m-%d')
+        by_date[d] = {
+            'date':       d,
+            'emotion':    e.emotion,
+            'mood_group': e.mood_group,
+        }
+
+    daily = list(by_date.values())
+
+    # Count mood groups for summary
+    counts = {'Positive': 0, 'Cautious': 0, 'Negative': 0}
+    for d in daily:
+        mg = d.get('mood_group', 'Positive')
+        if mg in counts:
+            counts[mg] += 1
+
+    # Dominant mood this week
+    dominant = max(counts, key=counts.get) if any(counts.values()) else 'Positive'
+
+    # Wellness tip based on dominant mood
+    tips = {
+        'Positive': 'You have had a great week emotionally! Keep nurturing your positive habits and social connections.',
+        'Cautious': 'Some anxiety detected this week. Try the 5-4-3-2-1 grounding exercise in the Wellness section.',
+        'Negative': 'It has been a tough week. Please consider booking a counsellor appointment or talking to MindBot.',
+    }
+
+    return jsonify({
+        'entries':  daily,
+        'summary': {
+            'counts':   counts,
+            'dominant': dominant,
+            'tip':      tips[dominant],
+            'total':    len(daily),
+        }
+    }), 200
+
+# ── GET /api/resources — return all resources ──────────────────
+@app.route('/api/resources')
+@login_required
+def get_resources():
+    category = request.args.get('category')   # optional filter
+    search   = request.args.get('search', '').strip().lower()
+
+    query = Resource.query
+    if category and category != 'All':
+        query = query.filter_by(category=category)
+    if search:
+        query = query.filter(
+            Resource.title.ilike(f'%{search}%') |
+            Resource.description.ilike(f'%{search}%')
+        )
+
+    resources = query.order_by(Resource.category, Resource.title).all()
+    return jsonify([r.to_dict() for r in resources]), 200
+
+
+# ── Seed starter resources — call once from app context ────────
+# Add this helper function and call it in the if __name__ == '__main__' block
+def seed_resources():
+    if Resource.query.count() > 0:
+        return   # already seeded
+
+    starter = [
+        # Anxiety
+        {'title':'Box Breathing for Exam Anxiety','icon':'🌬','category':'Anxiety',
+         'description':'A simple 4-4-4-4 breathing technique proven to calm the nervous system within minutes.',
+         'content':'Inhale for 4 counts, hold for 4 counts, exhale for 4 counts, hold for 4 counts. Repeat 4 times.'},
+        {'title':'5-4-3-2-1 Grounding Technique','icon':'🖐','category':'Anxiety',
+         'description':'Ground yourself in the present moment using your five senses to break an anxiety spiral.',
+         'content':'Name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste.'},
+        {'title':'Understanding Test Anxiety','icon':'📝','category':'Anxiety',
+         'description':'Why exams make us anxious and evidence-based strategies to manage performance stress.',
+         'content':'Test anxiety is caused by the brain perceiving the exam as a threat. Preparation, sleep, and breathing reduce its impact.'},
+        # Sleep
+        {'title':'7 Sleep Hygiene Rules for Students','icon':'😴','category':'Sleep',
+         'description':'Practical steps to improve your sleep quality even during high-pressure study periods.',
+         'content':'Consistent sleep times, dark room, no screens 1hr before bed, limit caffeine after 2pm, keep room cool.'},
+        {'title':'Why Sleep Matters for Academic Performance','icon':'🧠','category':'Sleep',
+         'description':'Research shows sleep-deprived students perform significantly worse on memory and reasoning tasks.',
+         'content':'Memory consolidation occurs during sleep. Aim for 7-9 hours. Avoid all-nighters before exams.'},
+        # Stress
+        {'title':'Managing Deadline Stress','icon':'⏰','category':'Stress',
+         'description':'Time-boxing, priority matrices, and short breaks can dramatically reduce academic overwhelm.',
+         'content':'Break large tasks into 25-minute Pomodoro sessions. Take a 5-minute walk between each one.'},
+        {'title':'Progressive Muscle Relaxation','icon':'💪','category':'Stress',
+         'description':'Tense and release each muscle group to release physical tension stored by chronic stress.',
+         'content':'Starting from feet, tense each muscle group for 5 seconds then release. Work upward to face. Takes 10 minutes.'},
+        {'title':'Academic Burnout: Signs and Recovery','icon':'🔥','category':'Stress',
+         'description':'Recognise the warning signs of burnout early and take steps to recover before it escalates.',
+         'content':'Burnout signs: exhaustion, cynicism, reduced effectiveness. Recovery: rest, boundaries, social support.'},
+        # Motivation
+        {'title':'Finding Your Study Motivation','icon':'🎯','category':'Motivation',
+         'description':'Reconnect with your goals and use proven techniques to restart momentum when feeling unmotivated.',
+         'content':'Start with 2-minute tasks. Reward completion. Connect daily study to your long-term career vision.'},
+        {'title':'The Power of Small Wins','icon':'⭐','category':'Motivation',
+         'description':'How celebrating small daily achievements builds the momentum needed for long-term success.',
+         'content':'Each small win releases dopamine, reinforcing study habits. Track completions with a checklist.'},
+        # Loneliness
+        {'title':'Combating University Loneliness','icon':'🤝','category':'Loneliness',
+         'description':'Practical ways to build meaningful connections on campus even if you are shy or new to the area.',
+         'content':'Join one campus club, sit with different people at lunch, volunteer for group projects. Quality over quantity.'},
+        {'title':'Social Connection and Mental Health','icon':'💚','category':'Loneliness',
+         'description':'Research consistently shows social connection is one of the strongest predictors of wellbeing.',
+         'content':'Even brief positive social interactions reduce cortisol. Reach out to one person daily, even with a message.'},
+    ]
+
+    for r in starter:
+        db.session.add(Resource(**r))
+    db.session.commit()
+    print(f"✅ Seeded {len(starter)} starter resources")
+
+
+
     
 
 @app.route('/api/register', methods=['POST'])
@@ -907,5 +1185,9 @@ def me():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        seed_resources() 
         print("✅ All 7 database tables created in mindease_db")
     app.run(debug=False, port=5000)
+
+
+
