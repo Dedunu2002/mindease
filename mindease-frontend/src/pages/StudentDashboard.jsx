@@ -13,6 +13,7 @@ export default function StudentDashboard() {
   const [streak, setStreak] = useState(0)
 const [latestCheckin, setLatestCheckin] = useState(null)
 const [checkinHistory, setCheckinHistory] = useState([])
+const [badges, setBadges] = useState([])
 const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -37,12 +38,14 @@ const [loading, setLoading] = useState(true)
 
     if (streakRes.ok) {
   const streakData = await streakRes.json()
+
   setStreak(streakData.current_streak || 0)
+  setBadges(streakData.badges || [])
 }
 
     if (latestRes.ok) {
       const latestData = await latestRes.json()
-      setLatestCheckin(latestData)
+      setLatestCheckin(latestData.checkin || null)
     }
 
     if (historyRes.ok) {
@@ -229,13 +232,15 @@ const socialPercentage = Math.min(
             </div>
 
             <div className="summary-value">
-              4
-              <span>badges</span>
-            </div>
+  {loading ? '—' : badges.length}
+  <span>badges</span>
+</div>
 
-            <div className="summary-footer">
-              2 more to unlock ✨
-            </div>
+<div className="summary-footer">
+  {6 - badges.length > 0
+    ? `${6 - badges.length} more to unlock ✨`
+    : 'All badges unlocked 🎉'}
+</div>
 
           </article>
 

@@ -836,35 +836,191 @@ def get_streak():
     try:
         user_id = session['user_id']
 
+        # ----------------------------------------------------
+        # GET STUDENT CHECK-INS
+        # ----------------------------------------------------
+
+        checkins = (
+            CheckIn.query
+            .filter_by(user_id=user_id)
+            .order_by(CheckIn.checkin_date.asc())
+            .all()
+        )
+
+        checkin_count = len(checkins)
+
+        # ----------------------------------------------------
+        # GET / CREATE STREAK RECORD
+        # ----------------------------------------------------
+
         streak = Streak.query.filter_by(
             user_id=user_id
         ).first()
 
         if not streak:
-            return jsonify({
-                'success': True,
-                'current_streak': 0,
-                'longest_streak': 0,
-                'badges': []
-            }), 200
+            streak = Streak(
+                user_id=user_id,
+                current_streak=0,
+                longest_streak=0,
+                badges='[]'
+            )
+
+            db.session.add(streak)
+
+        # ----------------------------------------------------
+        # CALCULATE CURRENT STREAK
+        # ----------------------------------------------------
+
+        current_streak = 0
+        longest_streak = 0
+
+        if checkins:
+
+            dates = sorted(
+                set(
+                    item.checkin_date
+                    for item in checkins
+                    if item.checkin_date
+                )
+            )
+
+            if dates:
+
+                # Calculate longest streak
+                temp_streak = 1
+                longest_streak = 1
+
+                for i in range(1, len(dates)):
+
+                    difference = (
+                        dates[i] - dates[i - 1]
+                    ).days
+
+                    if difference == 1:
+                        temp_streak += 1
+                    else:
+                        temp_streak = 1
+
+                    if temp_streak > longest_streak:
+                        longest_streak = temp_streak
+
+                # Calculate current streak
+                current_streak = 1
+
+                for i in range(len(dates) - 1, 0, -1):
+
+                    difference = (
+                        dates[i] - dates[i - 1]
+                    ).days
+
+                    if difference == 1:
+                        current_streak += 1
+                    else:
+                        break
+
+        # ----------------------------------------------------
+        # CALCULATE BADGES
+        # ----------------------------------------------------
+
+        badges = []
+
+        # 🌱 First Step
+        if checkin_count >= 1:
+            badges.append({
+                'id': 'first_step',
+                'name': 'First Step',
+                'icon': '🌱',
+                'description': 'Completed your first wellbeing check-in'
+            })
+
+        # 💛 Wellness Explorer
+        if checkin_count >= 5:
+            badges.append({
+                'id': 'wellness_explorer',
+                'name': 'Wellness Explorer',
+                'icon': '💛',
+                'description': 'Completed 5 wellbeing check-ins'
+            })
+
+        # 🔥 3-Day Streak
+        if longest_streak >= 3:
+            badges.append({
+                'id': 'three_day_streak',
+                'name': '3-Day Streak',
+                'icon': '🔥',
+                'description': 'Completed check-ins for 3 consecutive days'
+            })
+
+        # 🌸 7-Day Streak
+        if longest_streak >= 7:
+            badges.append({
+                'id': 'seven_day_streak',
+                'name': '7-Day Streak',
+                'icon': '🌸',
+                'description': 'Completed check-ins for 7 consecutive days'
+            })
+
+        # 📖 Reflective Mind
+        journal_count = Journal.query.filter_by(
+            user_id=user_id
+        ).count()
+
+        if journal_count >= 3:
+            badges.append({
+                'id': 'reflective_mind',
+                'name': 'Reflective Mind',
+                'icon': '📖',
+                'description': 'Completed 3 journal entries'
+            })
+
+        # 🏆 Wellness Champion
+        if checkin_count >= 10:
+            badges.append({
+                'id': 'wellness_champion',
+                'name': 'Wellness Champion',
+                'icon': '🏆',
+                'description': 'Completed 10 wellbeing check-ins'
+            })
+
+        # ----------------------------------------------------
+        # SAVE STREAK + BADGES
+        # ----------------------------------------------------
+
+        streak.current_streak = current_streak
+        streak.longest_streak = longest_streak
+        streak.badges = json.dumps(badges)
+
+        if checkins:
+            streak.last_checkin_date = checkins[-1].checkin_date
+
+        db.session.commit()
+
+        # ----------------------------------------------------
+        # RETURN RESULT
+        # ----------------------------------------------------
 
         return jsonify({
             'success': True,
-            'current_streak': streak.current_streak,
-            'longest_streak': streak.longest_streak,
-            'badges': json.loads(streak.badges or '[]')
+            'current_streak': current_streak,
+            'longest_streak': longest_streak,
+            'badges': badges,
+            'checkin_count': checkin_count,
+            'journal_count': journal_count,
+            'total_badges': 6
         }), 200
 
     except Exception as e:
+
+        db.session.rollback()
+
         print('❌ Streak error:', e)
 
         return jsonify({
             'success': False,
-            'error': 'Failed to load streak',
+            'error': 'Failed to calculate streak',
             'details': str(e)
         }), 500
-
-
+    
 # Add to app.py after the check-in routes
 
 @app.route('/api/journal', methods=['POST'])
