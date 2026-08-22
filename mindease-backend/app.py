@@ -1405,6 +1405,202 @@ def test_email():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Add to app.py after SOS routes
+
+@app.route('/api/counsellors')
+@login_required
+def get_counsellors():
+    """Returns all approved counsellors for the booking dropdown"""
+    counsellors = User.query.filter_by(
+        role='counsellor',
+        is_approved=True
+    ).all()
+
+    return jsonify([{
+        'id':   c.id,
+        'name': c.name,
+    } for c in counsellors]), 200
+
+@app.route('/api/slots')
+@login_required
+def get_slots():
+    """
+    Returns available time slots for a counsellor on a specific date.
+    Removes any slots already booked (status != rejected).
+    Query params: counsellor_id, date (YYYY-MM-DD)
+    """
+    counsellor_id = request.args.get('counsellor_id', type=int)
+    date_str      = request.args.get('date', '')
+
+    if not counsellor_id or not date_str:
+        return jsonify({'error': 'counsellor_id and date are required'}), 400
+
+    try:
+        from datetime import date as date_type
+        appt_date = date_type.fromisoformat(date_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+    # Don't allow booking in the past
+    if appt_date < date_type.today():
+        return jsonify({'error': 'Cannot book a past date'}), 400
+
+    # All possible time slots
+    ALL_SLOTS = [
+        '09:00', '09:30', '10:00', '10:30',
+        '11:00', '11:30', '14:00', '14:30',
+        '15:00', '15:30', '16:00', '16:30',
+    ]
+
+    # Find already-booked slots for this counsellor on this date
+    # Rejected appointments free up the slot again
+    booked = Appointment.query.filter(
+        Appointment.counsellor_id  == counsellor_id,
+        Appointment.requested_date == appt_date,
+        Appointment.status.in_(['pending', 'confirmed'])
+    ).all()
+
+    booked_slots = {a.time_slot for a in booked}
+    available    = [s for s in ALL_SLOTS if s not in booked_slots]
+
+    return jsonify({
+        'date':      date_str,
+        'available': available,
+        'booked':    list(booked_slots),
+    }), 200
+
+@app.route('/api/book', methods=['POST'])
+@login_required
+def book_appointment():
+    student_id = session['user_id']
+    data       = request.get_json()
+
+    counsellor_id = data.get('counsellor_id')
+    date_str      = data.get('date', '')
+    time_slot     = data.get('time_slot', '')
+    notes         = data.get('notes', '').strip()
+
+    if not counsellor_id or not date_str or not time_slot:
+        return jsonify({'error': 'Counsellor, date and time slot are all required'}), 400
+
+    from datetime import date as date_type
+    try:
+        appt_date = date_type.fromisoformat(date_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid date'}), 400
+
+    if appt_date < date_type.today():
+        return jsonify({'error': 'Cannot book a past date'}), 400
+
+    # ── Conflict check ────────────────────────────────────────────
+    # Reject if counsellor is already booked at this date + time
+    conflict = Appointment.query.filter(
+        Appointment.counsellor_id  == counsellor_id,
+        Appointment.requested_date == appt_date,
+        Appointment.time_slot      == time_slot,
+        Appointment.status.in_(['pending', 'confirmed'])
+    ).first()
+
+    if conflict:
+        return jsonify({
+            'error': 'That time slot is no longer available. Please choose another.'
+        }), 409
+
+    # ── Prevent duplicate booking by same student ─────────────────
+    existing = Appointment.query.filter(
+        Appointment.student_id     == student_id,
+        Appointment.counsellor_id  == counsellor_id,
+        Appointment.requested_date == appt_date,
+        Appointment.status.in_(['pending', 'confirmed'])
+    ).first()
+
+    if existing:
+        return jsonify({
+            'error': 'You already have a booking with this counsellor on this date.'
+        }), 409
+
+    # ── Save appointment ──────────────────────────────────────────
+    appt = Appointment(
+        student_id     = student_id,
+        counsellor_id  = int(counsellor_id),
+        requested_date = appt_date,
+        time_slot      = time_slot,
+        notes          = notes,
+        status         = 'pending',
+    )
+    db.session.add(appt)
+    db.session.commit()
+
+    # ── Send confirmation emails ──────────────────────────────────
+    student    = User.query.get(student_id)
+    counsellor = User.query.get(counsellor_id)
+
+    try:
+        # Email to student
+        student_msg = Message(
+            subject    = 'MindEase — Appointment Request Received',
+            recipients = [student.email],
+            body       = f"""Dear {student.name},
+
+Your appointment request has been received and is pending confirmation.
+
+Details:
+  Counsellor : {counsellor.name}
+  Date       : {appt_date.strftime('%d %B %Y')}
+  Time       : {time_slot}
+  Status     : Pending counsellor confirmation
+
+You will receive another email once your counsellor confirms or reschedules.
+
+— MindEase Student Wellbeing System"""
+        )
+        mail.send(student_msg)
+
+        # Email to counsellor
+        counsellor_msg = Message(
+            subject    = 'MindEase — New Appointment Request',
+            recipients = [counsellor.email],
+            body       = f"""Dear {counsellor.name},
+
+A student has requested an appointment with you.
+
+Details:
+  Student : {student.name}
+  Date    : {appt_date.strftime('%d %B %Y')}
+  Time    : {time_slot}
+  Notes   : {notes or 'None provided'}
+
+Please log in to MindEase to confirm or reschedule this appointment.
+
+— MindEase Student Wellbeing System"""
+        )
+        mail.send(counsellor_msg)
+
+    except Exception as e:
+        # Email failure should not block the booking
+        print(f"Email error: {e}")
+
+    return jsonify({
+        'message':        'Appointment booked successfully!',
+        'appointment_id': appt.id,
+        'status':         'pending',
+        'counsellor':     counsellor.name,
+        'date':           appt_date.strftime('%d %B %Y'),
+        'time_slot':      time_slot,
+    }), 201
+
+
+@app.route('/api/appointments')
+@login_required
+def get_appointments():
+    """Returns this student's appointment history"""
+    user_id = session['user_id']
+    appts   = (Appointment.query
+               .filter_by(student_id=user_id)
+               .order_by(Appointment.requested_date.desc())
+               .all())
+    return jsonify([a.to_dict() for a in appts]), 200        
+
 # ── GET /api/resources — return all resources ──────────────────
 @app.route('/api/resources')
 @login_required

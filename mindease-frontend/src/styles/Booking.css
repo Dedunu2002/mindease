@@ -1,0 +1,133 @@
+/* src/styles/Booking.css */
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width:900px) { .booking-layout { grid-template-columns:1fr; } }
+
+/* Header */
+.booking-header    { margin-bottom:20px; }
+.booking-header h1 { font-size:24px; font-weight:700; color:var(--dark); }
+.booking-header p  { font-size:14px; color:var(--gray-500); margin-top:4px; }
+
+/* Step progress */
+.booking-steps {
+  display:flex; gap:0; margin-bottom:20px;
+  border-radius:var(--radius-md); overflow:hidden;
+  border:1px solid var(--gray-200);
+}
+.booking-step {
+  flex:1; display:flex; align-items:center; gap:8px;
+  padding:10px 14px; background:var(--gray-100);
+  font-size:12px; color:var(--gray-500);
+}
+.booking-step.active { background:var(--teal-light); color:var(--teal-dark); font-weight:600; }
+.booking-step.done   { background:var(--teal); color:white; }
+.step-circle {
+  width:22px; height:22px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.12); font-size:11px; font-weight:700;
+}
+.booking-step.active .step-circle { background:var(--teal); color:white; }
+.booking-step.done   .step-circle { background:rgba(255,255,255,0.3); }
+
+/* Booking card */
+.booking-card {
+  background:white; border-radius:var(--radius-lg);
+  border:1px solid var(--gray-200); padding:24px;
+  box-shadow:var(--shadow-sm);
+}
+
+.field-hint   { font-size:12px; color:var(--gray-500); margin-top:4px; }
+.optional-tag { font-size:11px; color:var(--gray-500); font-weight:400; margin-left:4px; }
+
+.no-counsellors {
+  background:var(--gray-100); border-radius:var(--radius-md);
+  padding:14px; font-size:13px; color:var(--gray-700); line-height:1.5;
+}
+
+.booking-next-btn { width:100%; padding:13px; font-size:15px; margin-top:8px; }
+
+/* Slot step */
+.slot-summary {
+  display:flex; justify-content:space-between; align-items:center;
+  background:var(--teal-light); border-radius:var(--radius-md);
+  padding:10px 14px; margin-bottom:16px;
+}
+.slot-summary p    { font-size:14px; color:var(--teal-darker); margin:0; }
+.slot-back-btn     { background:transparent; border:none; color:var(--teal);
+  font-size:13px; font-weight:500; cursor:pointer; }
+.slot-back-btn:hover { text-decoration:underline; }
+
+.slots-loading { color:var(--gray-500); font-size:14px; text-align:center; padding:24px; }
+.slots-empty   { text-align:center; padding:28px 16px; }
+.slots-empty span { font-size:36px; display:block; margin-bottom:8px; }
+.slots-empty p    { font-size:14px; color:var(--gray-500); margin-bottom:14px; }
+
+.slots-instruction { font-size:13px; font-weight:500; color:var(--gray-700); margin-bottom:12px; }
+.slots-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px;
+}
+.slot-btn {
+  padding:10px 6px; border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-md); background:white;
+  font-size:13px; font-weight:500; color:var(--gray-700);
+  cursor:pointer; transition:all 0.15s; text-align:center;
+}
+.slot-btn:hover    { border-color:var(--teal); color:var(--teal); background:var(--teal-light); }
+.slot-btn.selected { background:var(--teal); border-color:var(--teal); color:white; }
+
+/* Confirmation */
+.booking-confirmed {
+  background:white; border-radius:var(--radius-lg);
+  border:1px solid var(--gray-200); padding:32px;
+  text-align:center; box-shadow:var(--shadow-sm);
+}
+.confirmed-icon { font-size:52px; margin-bottom:12px; }
+.booking-confirmed h2 { font-size:22px; font-weight:700; color:var(--dark); margin-bottom:6px; }
+.booking-confirmed > p { font-size:14px; color:var(--gray-500); margin-bottom:20px; }
+
+.confirmed-details {
+  background:var(--gray-100); border-radius:var(--radius-md);
+  padding:16px; margin-bottom:16px; text-align:left;
+}
+.confirmed-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:7px 0; border-bottom:1px solid var(--gray-200); font-size:13px;
+}
+.confirmed-row:last-child { border-bottom:none; }
+.confirmed-row span:first-child { color:var(--gray-500); }
+.confirmed-row strong { color:var(--dark); }
+
+.status-badge { font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px; }
+.status-pending  { background:#FFF3CD; color:#856404; }
+.status-confirmed{ background:#EAF3DE; color:#2E5E08; }
+.status-rejected { background:#FAECE7; color:#993C1D; }
+
+.confirmed-note {
+  font-size:12px; color:var(--gray-500); margin-bottom:20px; line-height:1.6;
+}
+.confirmed-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.confirmed-actions .btn-secondary { text-decoration:none; }
+
+/* Right col — history */
+.history-title   { font-size:17px; font-weight:600; color:var(--dark); margin-bottom:14px; }
+.history-loading,
+.history-empty   { text-align:center; padding:32px 16px; color:var(--gray-500);
+  font-size:14px; background:white; border-radius:var(--radius-lg);
+  border:1px solid var(--gray-200); }
+.history-empty span { font-size:36px; display:block; margin-bottom:8px; }
+
+.history-list    { display:flex; flex-direction:column; gap:10px; }
+.history-card    {
+  background:white; border-radius:var(--radius-lg);
+  border:1px solid var(--gray-200); padding:14px 16px; box-shadow:var(--shadow-sm);
+}
+.history-card-top  { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.history-counsellor{ font-size:14px; font-weight:600; color:var(--dark); margin:0 0 2px; }
+.history-datetime  { font-size:12px; color:var(--gray-500); margin:0; }
+.history-status    { font-size:11px; font-weight:600; padding:3px 10px;
+  border-radius:20px; white-space:nowrap; flex-shrink:0; }
