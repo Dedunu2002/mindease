@@ -3,7 +3,7 @@
 from flask import Flask, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_mail import Mail
+from flask_mail import Mail, Message
 from config import Config
 from google import genai
 from datetime import datetime, date, timedelta
@@ -1311,6 +1311,99 @@ def clear_chat():
     return jsonify({
         'message': 'Chat history cleared'
     }), 200
+
+# Add to app.py after the chat routes
+
+@app.route('/api/sos', methods=['POST'])
+@login_required
+def sos_alert():
+    """
+    Sends an anonymous SOS alert email to all approved counsellors.
+    The student's identity is NEVER included in the email.
+    Only a timestamp and alert message are sent.
+    """
+    # ── Find all approved counsellors ─────────────────────────────
+    counsellors = User.query.filter_by(
+        role='counsellor',
+        is_approved=True
+    ).all()
+
+    if not counsellors:
+        # No counsellors registered yet — still return success
+        # so the student sees the modal and gets the hotline number
+        return jsonify({
+            'message': 'Alert noted. Please call 1926 for immediate support.',
+            'sent_to': 0
+        }), 200
+
+    # ── Build the alert email ─────────────────────────────────────
+    now        = datetime.now().strftime('%d %B %Y at %H:%M')
+    subject    = f'🆘 MindEase SOS Alert — Anonymous Student Needs Support'
+
+    email_body = f"""
+Dear Counsellor,
+
+This is an automated anonymous alert from the MindEase student wellbeing system.
+
+A student has pressed the SOS button and may need immediate support.
+
+Alert time: {now}
+
+IMPORTANT:
+- The student's identity has NOT been shared to protect their privacy.
+- Please be available for walk-in students who may approach you today.
+- If you are able to, please check in with students in common areas.
+
+Immediate crisis resources for students:
+- Sumithrayo Sri Lanka: 1926 (24/7 crisis helpline)
+- University counselling office (please make yourself available)
+
+This alert was generated automatically by MindEase.
+Do not reply to this email.
+
+— MindEase Student Wellbeing System
+"""
+
+    # ── Send one email per counsellor ────────────────────────────
+    sent_count = 0
+    errors     = []
+
+    for counsellor in counsellors:
+        try:
+            msg = Message(
+                subject    = subject,
+                recipients = [counsellor.email],
+                body       = email_body,
+            )
+            mail.send(msg)
+            sent_count += 1
+        except Exception as e:
+            errors.append(str(e))
+            print(f"Mail error to {counsellor.email}: {e}")
+
+    # ── Always return success to the student ─────────────────────
+    # Even if email fails, student still sees the hotline number
+    return jsonify({
+        'message': 'Alert sent. Please call 1926 if you need immediate help.',
+        'sent_to': sent_count,
+    }), 200
+
+
+# ── Test email route — confirm Flask-Mail works ────────────────
+# Visit http://localhost:5000/api/test-email in the browser
+# Remove this route before final submission
+@app.route('/api/test-email')
+def test_email():
+    try:
+        msg = Message(
+            subject    = 'MindEase — Email Test ✅',
+            recipients = [Config.MAIL_USERNAME],
+            body       = 'Flask-Mail is working correctly. SOS alerts are ready.'
+        )
+        mail.send(msg)
+        return jsonify({'status': '✅ Test email sent! Check your Gmail inbox.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ── GET /api/resources — return all resources ──────────────────
 @app.route('/api/resources')
