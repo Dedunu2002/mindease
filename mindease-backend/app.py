@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_mail import Mail
 from config import Config
+from google import genai
 from datetime import datetime, date, timedelta
 import joblib
 import numpy as np
@@ -12,6 +13,7 @@ import pandas as pd
 import re
 import json
 import bcrypt
+
 from functools import wraps
 # ── Initialise app ────────────────────────────────────────────
 app = Flask(__name__)
@@ -50,6 +52,80 @@ tfidf = joblib.load(Config.TFIDF_PATH)
 
 with open(Config.MOOD_MAP_PATH, "r") as f:
     mood_map = json.load(f)
+
+
+# ════════════════════════════════════════════════════════════
+# AI MODEL 3 — MindBot Gemini
+# ════════════════════════════════════════════════════════════
+
+if not Config.GEMINI_API_KEY:
+    raise RuntimeError(
+        "GEMINI_API_KEY is not configured. "
+        "Add it to the backend .env file."
+    )
+
+gemini_client = genai.Client(
+    api_key=Config.GEMINI_API_KEY
+)
+
+GEMINI_MODEL = "gemini-3.6-flash"
+
+print("✅ AI Model 3 — MindBot Gemini configured")   
+
+MINDBOT_SYSTEM_PROMPT = """
+You are MindBot, a compassionate and supportive mental wellness
+assistant for university students in Sri Lanka.
+
+Your role is to:
+
+- Listen empathetically to students who feel stressed, anxious,
+  overwhelmed, lonely or burned out.
+- Provide practical, evidence-informed wellness suggestions such as
+  breathing exercises, grounding techniques, study planning,
+  time-management strategies and sleep-hygiene advice.
+- Encourage students to contact their university counsellor when
+  professional support would be useful.
+- Respond in a warm, friendly, respectful and non-judgmental tone.
+- Use simple language suitable for university students.
+- Keep normal responses concise, usually 2 to 4 short paragraphs.
+
+You must NEVER:
+
+- Diagnose a mental health condition.
+- Claim to replace a counsellor, psychologist, doctor or therapist.
+- Recommend prescription medication.
+- Shame, dismiss or minimise the student's feelings.
+- Pretend to be a human counsellor.
+
+If a student expresses suicidal thoughts or thoughts of self-harm:
+
+- Respond with compassion.
+- Encourage immediate real-world support.
+- Provide the Sri Lankan Crisis Support Line: 1333.
+- Encourage them to contact their university counsellor or a trusted
+  person immediately.
+- If they are in immediate danger, encourage emergency assistance.
+- Do not continue with a long normal conversation.
+
+For normal conversations, finish with one brief practical suggestion
+the student can try right now.
+"""
+
+CRISIS_KEYWORDS = [
+    'kill myself',
+    'kill me',
+    'end my life',
+    'want to die',
+    'wish i was dead',
+    'suicide',
+    'suicidal',
+    'self harm',
+    'self-harm',
+    'hurt myself',
+    'harm myself',
+    'not worth living',
+    'no reason to live',
+]
 
 
 print("✅ AI Model 1 loaded")
@@ -963,6 +1039,123 @@ def sentiment_weekly():
         }
     }), 200
 
+# ════════════════════════════════════════════════════════════
+# MINDBOT — AI MODEL 3
+# ════════════════════════════════════════════════════════════
+
+@app.route('/api/chat', methods=['POST'])
+@login_required
+def chat():
+    data = request.get_json() or {}
+    message = data.get('message', '').strip()
+
+    if not message:
+        return jsonify({
+            'error': 'Message cannot be empty'
+        }), 400
+
+    # ── Crisis detection ────────────────────────────────────
+    msg_lower = message.lower()
+
+    if any(keyword in msg_lower for keyword in CRISIS_KEYWORDS):
+
+        crisis_response = (
+            "I can hear that you are going through a very "
+            "difficult moment, and I am glad you reached out.\n\n"
+            "🆘 Sri Lanka Crisis Support Line: 1333\n\n"
+            "Please contact someone you trust or your university "
+            "counsellor right now. If you are in immediate danger, "
+            "please seek emergency help in person immediately."
+        )
+
+        return jsonify({
+            'reply': crisis_response,
+            'is_crisis': True
+        }), 200
+
+    # ── Initialise chat history ─────────────────────────────
+    if 'chat_history' not in session:
+        session['chat_history'] = []
+
+    history = session['chat_history']
+
+    # Keep only the most recent 10 messages
+    recent_history = history[-10:]
+
+    # ── Build conversation ──────────────────────────────────
+    conversation = MINDBOT_SYSTEM_PROMPT + "\n\n"
+
+    for turn in recent_history:
+
+        role = (
+            "Student"
+            if turn['role'] == 'user'
+            else 'MindBot'
+        )
+
+        conversation += (
+            f"{role}: {turn['content']}\n"
+        )
+
+    conversation += (
+        f"Student: {message}\n"
+        "MindBot:"
+    )
+
+    try:
+
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=conversation
+        )
+
+        bot_reply = (
+            response.text.strip()
+            if response.text
+            else "I'm sorry, I couldn't generate a response right now."
+        )
+
+    except Exception as e:
+
+        print("❌ Gemini API error:", e)
+
+        bot_reply = (
+            "I'm temporarily having trouble connecting to my AI service. "
+            "Please try again in a moment. If you need immediate "
+            "support, please contact the Sri Lankan Crisis Support "
+            "Line at 1333 or your university counsellor."
+        )
+
+    # ── Save conversation ───────────────────────────────────
+    history.append({
+        'role': 'user',
+        'content': message
+    })
+
+    history.append({
+        'role': 'assistant',
+        'content': bot_reply
+    })
+
+    # Keep session reasonably small
+    session['chat_history'] = history[-20:]
+    session.modified = True
+
+    return jsonify({
+        'reply': bot_reply,
+        'is_crisis': False
+    }), 200
+
+@app.route('/api/chat/clear', methods=['POST'])
+@login_required
+def clear_chat():
+
+    session.pop('chat_history', None)
+
+    return jsonify({
+        'message': 'Chat history cleared'
+    }), 200
+
 # ── GET /api/resources — return all resources ──────────────────
 @app.route('/api/resources')
 @login_required
@@ -1037,7 +1230,6 @@ def seed_resources():
         db.session.add(Resource(**r))
     db.session.commit()
     print(f"✅ Seeded {len(starter)} starter resources")
-
 
 
     
