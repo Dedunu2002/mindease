@@ -19,3 +19,6 @@ mindease-frontend/package-lock.json
 # VS Code
 .vscode/
 ai/student_depression_dataset.csv
+
+# Ignore environment secrets
+.env
