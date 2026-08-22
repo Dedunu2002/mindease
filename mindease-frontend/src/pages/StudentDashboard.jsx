@@ -36,9 +36,9 @@ const [loading, setLoading] = useState(true)
     ])
 
     if (streakRes.ok) {
-      const streakData = await streakRes.json()
-      setStreak(streakData.streak || 0)
-    }
+  const streakData = await streakRes.json()
+  setStreak(streakData.current_streak || 0)
+}
 
     if (latestRes.ok) {
       const latestData = await latestRes.json()

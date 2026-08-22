@@ -1,0 +1,45 @@
+/* src/styles/StreakCard.css */
+
+.streak-card {
+  background:    white;
+  border-radius: var(--radius-lg);
+  border:        1px solid var(--gray-200);
+  padding:       20px;
+  box-shadow:    var(--shadow-sm);
+  margin-top:    20px;
+}
+.streak-loading { color:var(--gray-500); font-size:13px; text-align:center; padding:24px; }
+
+.streak-top { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.streak-flame {
+  font-size:       32px;
+  width:           56px; height:56px;
+  background:      #FFF3E0;
+  border-radius:   50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.streak-num  { font-size:24px; font-weight:700; color:var(--dark); margin:0; }
+.streak-unit { font-size:14px; font-weight:500; color:var(--gray-500); }
+.streak-label{ font-size:12px; color:var(--gray-500); margin:2px 0 0; }
+
+.streak-progress-section { margin-bottom:14px; }
+.streak-progress-label {
+  display:flex; justify-content:space-between;
+  font-size:12px; color:var(--gray-700); margin-bottom:6px;
+}
+.streak-progress-bar {
+  height:8px; background:var(--gray-100); border-radius:4px; overflow:hidden;
+}
+.streak-progress-fill {
+  height:100%; background:linear-gradient(90deg, var(--teal), var(--mint));
+  border-radius:4px; transition:width 0.4s ease;
+}
+.streak-remaining { font-size:12px; color:var(--gray-500); margin:6px 0 0; }
+
+.streak-badges-label { font-size:12px; font-weight:600; color:var(--dark); margin:0 0 8px; }
+.streak-badges-list { display:flex; flex-wrap:wrap; gap:6px; }
+.streak-badge-pill {
+  background:var(--teal-light); color:var(--teal-dark);
+  font-size:12px; font-weight:500; padding:4px 12px; border-radius:20px;
+}
