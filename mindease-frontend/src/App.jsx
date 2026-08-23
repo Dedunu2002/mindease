@@ -30,6 +30,9 @@ import WeeklySentiment     from './pages/WeeklySentiment'
 
 import CounsellorAppointments
   from './pages/CounsellorAppointments'
+import CounsellorStudents from './pages/CounsellorStudents'
+import CounsellorReports from './pages/CounsellorReports'
+
 
 
 // ============================================================
@@ -268,6 +271,23 @@ export default function App() {
   element={
     <ProtectedRoute allowedRoles={['counsellor']}>
       <CounsellorAppointments />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/counsellor-students"
+  element={
+    <ProtectedRoute allowedRoles={['counsellor']}>
+      <CounsellorStudents />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/counsellor-reports"
+  element={
+    <ProtectedRoute allowedRoles={['counsellor']}>
+      <CounsellorReports />
     </ProtectedRoute>
   }
 />

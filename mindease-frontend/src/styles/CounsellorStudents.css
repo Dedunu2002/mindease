@@ -1,0 +1,128 @@
+.counsellor-placeholder-page {
+  min-height: 100vh;
+
+  margin-left: 238px;
+
+  padding: 45px;
+
+  box-sizing: border-box;
+
+  background: #F7F8F7;
+}
+
+.placeholder-kicker {
+  color: #6C8D75;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+}
+
+.counsellor-placeholder-page h1 {
+  margin: 6px 0 7px;
+
+  color: #303934;
+
+  font-size: 30px;
+
+  letter-spacing: -0.04em;
+}
+
+.counsellor-placeholder-page > p {
+  margin: 0;
+
+  color: #807A83;
+
+  font-size: 13px;
+}
+
+.placeholder-card {
+  max-width: 720px;
+
+  margin-top: 30px;
+
+  padding: 25px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
+  border: 1px solid #E4EAE5;
+
+  border-radius: 18px;
+
+  background: white;
+
+  box-shadow:
+    0 6px 22px rgba(50, 60, 54, 0.035);
+}
+
+.placeholder-icon {
+  width: 55px;
+  height: 55px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 15px;
+
+  background: #E3F2FD;
+
+  font-size: 25px;
+}
+
+.placeholder-card h2 {
+  margin: 0 0 6px;
+
+  color: #3B4540;
+
+  font-size: 18px;
+}
+
+.placeholder-card p {
+  margin: 0;
+
+  max-width: 550px;
+
+  color: #817C84;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+}
+
+.coming-soon {
+  display: inline-block;
+
+  margin-top: 12px;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  background: #E3F2FD;
+
+  color: #547B94;
+
+  font-size: 8px;
+
+  font-weight: 750;
+}
+
+@media (max-width: 850px) {
+
+  .counsellor-placeholder-page {
+    margin-left: 68px;
+
+    padding: 30px 20px;
+  }
+
+}
