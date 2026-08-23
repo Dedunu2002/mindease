@@ -28,6 +28,9 @@ import Exercises           from './pages/Exercises'
 import Goals               from './pages/Goals'
 import WeeklySentiment     from './pages/WeeklySentiment'
 
+import CounsellorAppointments
+  from './pages/CounsellorAppointments'
+
 
 // ============================================================
 // PROTECTED ROUTE
@@ -260,6 +263,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/counsellor-appointments"
+  element={
+    <ProtectedRoute allowedRoles={['counsellor']}>
+      <CounsellorAppointments />
+    </ProtectedRoute>
+  }
+/>
 
 
         {/* ==================================================

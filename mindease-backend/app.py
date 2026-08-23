@@ -418,6 +418,32 @@ class Resource(db.Model):
             'icon':        self.icon,
         }
 
+# ============================================================
+# TABLE — SOS ALERT
+# Stores anonymous SOS activation timestamps
+# NEVER stores student identity
+# ============================================================
+
+class SOSAlert(db.Model):
+    __tablename__ = 'sos_alerts'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'created_at': (
+                self.created_at.isoformat()
+                if self.created_at else None
+            )
+        }
+
 
 
 # ════════════════════════════════════════════════════════════
@@ -1362,6 +1388,17 @@ def clear_chat():
 @app.route('/api/sos', methods=['POST'])
 @login_required
 def sos_alert():
+
+        # --------------------------------------------------------
+    # RECORD ANONYMOUS SOS ACTIVATION
+    # --------------------------------------------------------
+
+    sos_record = SOSAlert(
+        created_at=datetime.utcnow()
+    )
+
+    db.session.add(sos_record)
+    db.session.commit()
     """
     Sends an anonymous SOS alert email to all approved counsellors.
     The student's identity is NEVER included in the email.
@@ -1928,6 +1965,574 @@ def seed_resources():
     print(f"✅ Seeded {len(starter)} starter resources")
 
 
+def counsellor_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+
+        if 'user_id' not in session:
+            return jsonify({
+                'error': 'Login required'
+            }), 401
+
+        if session.get('user_role') != 'counsellor':
+            return jsonify({
+                'error': 'Counsellor access required'
+            }), 403
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+# ============================================================
+# COUNSELLOR — ANONYMOUS CAMPUS ANALYTICS
+# ============================================================
+
+@app.route('/api/counsellor/data', methods=['GET'])
+@counsellor_required
+def counsellor_dashboard_data():
+
+    try:
+        today = date.today()
+
+        # ----------------------------------------------------
+        # CURRENT WEEK
+        # Monday → today
+        # ----------------------------------------------------
+
+        current_week_start = (
+            today - timedelta(days=today.weekday())
+        )
+
+        current_week_checkins = CheckIn.query.filter(
+            CheckIn.checkin_date >= current_week_start,
+            CheckIn.checkin_date <= today
+        ).all()
+
+        # ----------------------------------------------------
+        # RISK DISTRIBUTION
+        # ----------------------------------------------------
+
+        risk_counts = {
+            'Good': 0,
+            'Moderate': 0,
+            'Poor': 0
+        }
+
+        for checkin in current_week_checkins:
+
+            risk = str(
+                checkin.risk_result or ''
+            ).strip().lower()
+
+            if risk in ['low', 'good']:
+                risk_counts['Good'] += 1
+
+            elif risk in ['medium', 'moderate']:
+                risk_counts['Moderate'] += 1
+
+            elif risk in ['high', 'poor']:
+                risk_counts['Poor'] += 1
+
+        total_current_week = sum(
+            risk_counts.values()
+        )
+
+        # ----------------------------------------------------
+        # PERCENTAGES
+        # ----------------------------------------------------
+
+        if total_current_week > 0:
+
+            risk_percentages = {
+                key: round(
+                    (value / total_current_week) * 100,
+                    1
+                )
+                for key, value in risk_counts.items()
+            }
+
+        else:
+
+            risk_percentages = {
+                'Good': 0,
+                'Moderate': 0,
+                'Poor': 0
+            }
+
+        # ----------------------------------------------------
+        # LAST 8 WEEKS
+        # ----------------------------------------------------
+
+        eight_weeks_ago = (
+            current_week_start - timedelta(days=49)
+        )
+
+        all_checkins = CheckIn.query.filter(
+            CheckIn.checkin_date >= eight_weeks_ago,
+            CheckIn.checkin_date <= today
+        ).all()
+
+        weekly_trend = []
+
+        for week_index in range(8):
+
+            week_start = (
+                current_week_start
+                - timedelta(days=(7 - week_index) * 7)
+            )
+
+            week_end = (
+                week_start + timedelta(days=6)
+            )
+
+            week_checkins = [
+                c for c in all_checkins
+                if week_start <= c.checkin_date <= week_end
+            ]
+
+            good = 0
+            moderate = 0
+            poor = 0
+
+            for checkin in week_checkins:
+
+                risk = str(
+                    checkin.risk_result or ''
+                ).strip().lower()
+
+                if risk in ['low', 'good']:
+                    good += 1
+
+                elif risk in ['medium', 'moderate']:
+                    moderate += 1
+
+                elif risk in ['high', 'poor']:
+                    poor += 1
+
+            weekly_trend.append({
+                'week': f'Week {week_index + 1}',
+                'start_date': week_start.isoformat(),
+                'end_date': week_end.isoformat(),
+                'good': good,
+                'moderate': moderate,
+                'poor': poor,
+                'total': good + moderate + poor
+            })
+
+        # ----------------------------------------------------
+        # APPOINTMENT ANALYTICS
+        # ONLY FOR THE LOGGED-IN COUNSELLOR
+        # ----------------------------------------------------
+
+        counsellor_id = session['user_id']
+
+        appointment_counts = {
+            'pending': Appointment.query.filter_by(
+                counsellor_id=counsellor_id,
+                status='pending'
+            ).count(),
+
+            'confirmed': Appointment.query.filter_by(
+                counsellor_id=counsellor_id,
+                status='confirmed'
+            ).count(),
+
+            'completed': Appointment.query.filter_by(
+                counsellor_id=counsellor_id,
+                status='completed'
+            ).count(),
+
+            'rejected': Appointment.query.filter_by(
+                counsellor_id=counsellor_id,
+                status='rejected'
+            ).count()
+        }
+
+        pending_appointments = appointment_counts['pending']
+
+        # ----------------------------------------------------
+        # SOS ALERTS THIS WEEK
+        # ----------------------------------------------------
+
+        week_sos_alerts = SOSAlert.query.filter(
+            SOSAlert.created_at >= datetime.combine(
+                current_week_start,
+                datetime.min.time()
+            )
+        ).order_by(
+            SOSAlert.created_at.desc()
+        ).all()
+
+        sos_alerts = [
+            alert.to_dict()
+            for alert in week_sos_alerts
+        ]
+
+        # ----------------------------------------------------
+        # RESPONSE
+        # ----------------------------------------------------
+
+        return jsonify({
+  
+            'success': True,
+
+            'summary': {
+                'checkins_this_week':
+                    total_current_week,
+
+                'pending_appointments':
+                    pending_appointments,
+
+                'good_percentage':
+                    risk_percentages['Good'],
+
+                'sos_this_week':
+                    len(sos_alerts)
+            },
+
+            'risk_distribution': [
+                {
+                    'name': 'Good',
+                    'value': risk_counts['Good'],
+                    'percentage':
+                        risk_percentages['Good']
+                },
+                {
+                    'name': 'Moderate',
+                    'value': risk_counts['Moderate'],
+                    'percentage':
+                        risk_percentages['Moderate']
+                },
+                {
+                    'name': 'Poor',
+                    'value': risk_counts['Poor'],
+                    'percentage':
+                        risk_percentages['Poor']
+                }
+            ],
+
+            'weekly_trend': weekly_trend,
+
+            'appointments': appointment_counts,
+
+            'sos_alerts': sos_alerts
+
+        }), 200
+
+    except Exception as e:
+
+        print(
+            '❌ Counsellor dashboard error:',
+            e
+        )
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load counsellor dashboard'
+        }), 500
+
+# ============================================================
+# COUNSELLOR — APPOINTMENTS
+# ============================================================
+
+@app.route('/api/counsellor/appointments', methods=['GET'])
+@counsellor_required
+def counsellor_appointments():
+
+    counsellor_id = session['user_id']
+
+    appointments = (
+        Appointment.query
+        .filter_by(counsellor_id=counsellor_id)
+        .order_by(
+            Appointment.requested_date.asc(),
+            Appointment.time_slot.asc()
+        )
+        .all()
+    )
+
+    result = []
+
+    for appointment in appointments:
+
+        student = User.query.get(
+            appointment.student_id
+        )
+
+        result.append({
+
+            'id':
+                appointment.id,
+
+            'student_name':
+                student.name
+                if student
+                else 'Unknown student',
+
+            'date':
+                appointment.requested_date.isoformat(),
+
+            'time_slot':
+                appointment.time_slot,
+
+            'status':
+                appointment.status,
+
+            'notes':
+                appointment.notes or '',
+
+            'created_at':
+                appointment.created_at.isoformat()
+                if appointment.created_at
+                else None
+
+        })
+
+    return jsonify(result), 200
+
+@app.route(
+    '/api/counsellor/update_appointment',
+    methods=['POST']
+)
+@counsellor_required
+def update_counsellor_appointment():
+
+    data = request.get_json() or {}
+
+    appointment_id = data.get(
+        'appointment_id'
+    )
+
+    new_status = data.get(
+        'status'
+    )
+
+    if not appointment_id:
+        return jsonify({
+            'error': 'Appointment ID is required'
+        }), 400
+
+
+    allowed_statuses = [
+        'confirmed',
+        'rejected',
+        'completed'
+    ]
+
+    if new_status not in allowed_statuses:
+
+        return jsonify({
+            'error':
+                'Invalid appointment status'
+        }), 400
+
+
+    # --------------------------------------------------------
+    # SECURITY:
+    # Only find appointments belonging to
+    # the currently logged-in counsellor.
+    # --------------------------------------------------------
+
+    counsellor_id = session['user_id']
+
+    appointment = Appointment.query.filter_by(
+        id=appointment_id,
+        counsellor_id=counsellor_id
+    ).first()
+
+
+    if not appointment:
+
+        return jsonify({
+            'error':
+                'Appointment not found or access denied'
+        }), 404
+
+
+    # --------------------------------------------------------
+    # STATUS TRANSITION VALIDATION
+    # --------------------------------------------------------
+
+    if appointment.status == 'rejected':
+
+        return jsonify({
+            'error':
+                'A rejected appointment cannot be updated.'
+        }), 400
+
+
+    if appointment.status == 'completed':
+
+        return jsonify({
+            'error':
+                'A completed appointment cannot be updated.'
+        }), 400
+
+
+    if (
+        new_status == 'completed'
+        and appointment.status != 'confirmed'
+    ):
+
+        return jsonify({
+            'error':
+                'Only confirmed appointments can be completed.'
+        }), 400
+
+
+    if (
+        new_status in ['confirmed', 'rejected']
+        and appointment.status != 'pending'
+    ):
+
+        return jsonify({
+            'error':
+                'Only pending appointments can be confirmed or rejected.'
+        }), 400
+
+
+    # --------------------------------------------------------
+    # UPDATE
+    # --------------------------------------------------------
+
+    old_status = appointment.status
+
+    appointment.status = new_status
+
+    db.session.commit()
+
+
+    # --------------------------------------------------------
+    # EMAIL STUDENT
+    # --------------------------------------------------------
+
+    student = User.query.get(
+        appointment.student_id
+    )
+
+    counsellor = User.query.get(
+        appointment.counsellor_id
+    )
+
+
+    if student and student.email:
+
+        try:
+
+            if new_status == 'confirmed':
+
+                subject = (
+                    'MindEase — Appointment Confirmed'
+                )
+
+                body = f"""
+Dear {student.name},
+
+Your MindEase counselling appointment has
+been confirmed.
+
+Appointment details:
+
+Counsellor : {counsellor.name if counsellor else 'Counsellor'}
+Date       : {appointment.requested_date.strftime('%d %B %Y')}
+Time       : {appointment.time_slot}
+Status     : Confirmed
+
+Please be available at the scheduled time.
+
+— MindEase Student Wellbeing System
+"""
+
+
+            elif new_status == 'rejected':
+
+                subject = (
+                    'MindEase — Appointment Request Rejected'
+                )
+
+                body = f"""
+Dear {student.name},
+
+Your MindEase counselling appointment request
+could not be confirmed.
+
+Appointment details:
+
+Counsellor : {counsellor.name if counsellor else 'Counsellor'}
+Date       : {appointment.requested_date.strftime('%d %B %Y')}
+Time       : {appointment.time_slot}
+Status     : Rejected
+
+Please return to MindEase and choose another
+available appointment time.
+
+— MindEase Student Wellbeing System
+"""
+
+
+            else:
+
+                subject = (
+                    'MindEase — Appointment Completed'
+                )
+
+                body = f"""
+Dear {student.name},
+
+Your MindEase counselling appointment has been
+marked as completed.
+
+Appointment details:
+
+Counsellor : {counsellor.name if counsellor else 'Counsellor'}
+Date       : {appointment.requested_date.strftime('%d %B %Y')}
+Time       : {appointment.time_slot}
+Status     : Completed
+
+Thank you for using MindEase.
+
+— MindEase Student Wellbeing System
+"""
+
+
+            msg = Message(
+                subject=subject,
+                recipients=[student.email],
+                body=body
+            )
+
+            mail.send(msg)
+
+
+        except Exception as e:
+
+            # Email failure should not undo
+            # the appointment status update.
+
+            print(
+                f'Appointment email error: {e}'
+            )
+
+
+    return jsonify({
+
+        'success': True,
+
+        'message':
+            f'Appointment {new_status} successfully.',
+
+        'appointment': {
+
+            'id':
+                appointment.id,
+
+            'status':
+                appointment.status
+
+        }
+
+    }), 200
+
     
 
 @app.route('/api/register', methods=['POST'])
@@ -2303,10 +2908,9 @@ def admin_analytics():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        db.create_all() 
         seed_resources() 
         print("✅ All 7 database tables created in mindease_db")
     app.run(debug=False, port=5000)
-
 
 

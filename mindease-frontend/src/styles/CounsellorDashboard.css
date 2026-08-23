@@ -1,0 +1,909 @@
+/* ============================================================
+   COUNSELLOR DASHBOARD
+   Calm green + lavender professional theme
+   ============================================================ */
+
+.counsellor-page {
+  min-height: 100vh;
+  background: #F7F8F7;
+  color: #27252B;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.counsellor-header {
+  min-height: 78px;
+  padding: 0 42px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #E8E6EA;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+
+.counsellor-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+
+.counsellor-brand-icon {
+  width: 45px;
+  height: 45px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #DFF3E4;
+
+  font-size: 23px;
+}
+
+
+.dashboard-eyebrow,
+.intro-label,
+.card-kicker {
+  margin: 0 0 4px;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+
+  color: #6C8D75;
+}
+
+
+.counsellor-brand h1 {
+  margin: 0;
+
+  font-size: 21px;
+  font-weight: 750;
+
+  letter-spacing: -0.02em;
+}
+
+
+.counsellor-header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+
+.privacy-badge {
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  background: #F0F7F2;
+  color: #55745E;
+
+  font-size: 12px;
+  font-weight: 650;
+}
+
+
+.counsellor-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #EEE8FF;
+  color: #705A9E;
+
+  font-weight: 750;
+}
+
+
+.counsellor-user strong {
+  display: block;
+  font-size: 13px;
+}
+
+
+.counsellor-user span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #89858E;
+  font-size: 11px;
+}
+
+
+.logout-button {
+  border: 1px solid #E4E0E7;
+  background: white;
+
+  padding: 9px 15px;
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  color: #605B64;
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+
+.logout-button:hover {
+  background: #F5F1F8;
+}
+
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+
+.counsellor-main {
+  max-width: 1450px;
+
+  margin: 0 auto;
+
+  padding: 35px 42px 55px;
+}
+
+
+/* ============================================================
+   INTRO
+   ============================================================ */
+
+.dashboard-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  margin-bottom: 28px;
+}
+
+
+.dashboard-intro h2 {
+  margin: 3px 0 7px;
+
+  font-size: 29px;
+  letter-spacing: -0.035em;
+}
+
+
+.dashboard-intro p:last-child {
+  margin: 0;
+
+  color: #77727C;
+  font-size: 14px;
+}
+
+
+.refresh-button {
+  padding: 10px 15px;
+
+  border: 1px solid #DDD8E1;
+  background: white;
+
+  border-radius: 10px;
+
+  color: #5C5960;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.refresh-button:hover {
+  border-color: #B8CDBD;
+  background: #F4FAF5;
+}
+
+
+/* ============================================================
+   SUMMARY CARDS
+   ============================================================ */
+
+.summary-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 17px;
+
+  margin-bottom: 20px;
+}
+
+
+.summary-card {
+  min-height: 125px;
+
+  padding: 20px;
+
+  border-radius: 17px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 15px;
+
+  border: 1px solid rgba(0, 0, 0, 0.04);
+
+  box-shadow:
+    0 5px 18px rgba(45, 38, 51, 0.035);
+}
+
+
+.sessions-card {
+  background: #DFF3E4;
+}
+
+
+.appointments-card {
+  background: #EEE8FF;
+}
+
+
+.progress-card {
+  background: #E3F2FD;
+}
+
+
+.sos-card {
+  background: #FFF0F0;
+}
+
+
+.summary-icon {
+  width: 43px;
+  height: 43px;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.62);
+
+  font-size: 20px;
+}
+
+
+.summary-card span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #6E6972;
+
+  font-size: 12px;
+  font-weight: 650;
+}
+
+
+.summary-card strong {
+  display: block;
+
+  font-size: 30px;
+  line-height: 1.05;
+
+  letter-spacing: -0.04em;
+}
+
+
+.summary-card small {
+  display: block;
+
+  margin-top: 6px;
+
+  color: #85808A;
+
+  font-size: 11px;
+}
+
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+
+.analytics-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(300px, 0.85fr)
+    minmax(0, 1.6fr);
+
+  gap: 18px;
+
+  margin-bottom: 18px;
+}
+
+
+.analytics-card {
+  position: relative;
+
+  background: white;
+
+  border: 1px solid #EAE7EC;
+
+  border-radius: 18px;
+
+  padding: 22px;
+
+  box-shadow:
+    0 6px 24px rgba(42, 35, 49, 0.035);
+}
+
+
+.full-card {
+  margin-bottom: 18px;
+}
+
+
+.card-heading {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: flex-start;
+
+  margin-bottom: 10px;
+}
+
+
+.card-heading h3 {
+  margin: 3px 0 4px;
+
+  font-size: 18px;
+  letter-spacing: -0.025em;
+}
+
+
+.card-heading p {
+  margin: 0;
+
+  color: #8A858E;
+
+  font-size: 12px;
+}
+
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 11px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #F5F2F7;
+
+  font-size: 17px;
+}
+
+
+.chart-area {
+  position: relative;
+}
+
+
+.donut-container {
+  position: relative;
+}
+
+
+.donut-center {
+  position: absolute;
+
+  left: 50%;
+  top: 48%;
+
+  transform: translate(-50%, -50%);
+
+  text-align: center;
+
+  pointer-events: none;
+}
+
+
+.donut-center strong {
+  display: block;
+
+  font-size: 26px;
+  letter-spacing: -0.04em;
+}
+
+
+.donut-center span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #89848E;
+
+  font-size: 11px;
+}
+
+
+/* ============================================================
+   BOTTOM
+   ============================================================ */
+
+.bottom-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+
+/* ============================================================
+   SOS
+   ============================================================ */
+
+.sos-heading-icon {
+  background: #FFF1F1;
+}
+
+
+.sos-list {
+  margin-top: 12px;
+}
+
+
+.sos-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 12px 0;
+
+  border-bottom: 1px solid #F0EDF2;
+}
+
+
+.sos-item:last-child {
+  border-bottom: none;
+}
+
+
+.sos-dot {
+  width: 32px;
+  height: 32px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #FFF0F0;
+
+  color: #C96E6E;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+.sos-item strong {
+  display: block;
+
+  font-size: 12px;
+}
+
+
+.sos-item span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #89848D;
+
+  font-size: 11px;
+}
+
+
+.empty-sos {
+  min-height: 205px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+
+  text-align: center;
+}
+
+
+.empty-sos > div {
+  width: 48px;
+  height: 48px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #DFF3E4;
+
+  color: #528064;
+
+  font-size: 20px;
+  font-weight: 800;
+
+  margin-bottom: 12px;
+}
+
+
+.empty-sos h4 {
+  margin: 0 0 5px;
+
+  font-size: 14px;
+}
+
+
+.empty-sos p {
+  max-width: 260px;
+
+  margin: 0;
+
+  color: #8A858E;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   PRIVACY
+   ============================================================ */
+
+.privacy-notice {
+  margin-top: 18px;
+
+  padding: 16px 18px;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  border: 1px solid #DDEBE0;
+
+  border-radius: 13px;
+
+  background: #F1F8F3;
+}
+
+
+.privacy-notice > span {
+  font-size: 18px;
+}
+
+
+.privacy-notice strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #4D7257;
+
+  font-size: 12px;
+}
+
+
+.privacy-notice p {
+  margin: 0;
+
+  color: #728077;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   TOOLTIP
+   ============================================================ */
+
+.counsellor-tooltip {
+  padding: 10px 13px;
+
+  background: white;
+
+  border: 1px solid #E4E0E7;
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 7px 20px rgba(40, 32, 48, 0.10);
+}
+
+
+.counsellor-tooltip strong,
+.counsellor-tooltip span,
+.counsellor-tooltip small {
+  display: block;
+}
+
+
+.counsellor-tooltip strong {
+  font-size: 12px;
+}
+
+
+.counsellor-tooltip span {
+  margin-top: 4px;
+
+  font-size: 11px;
+
+  color: #6E6973;
+}
+
+
+.counsellor-tooltip small {
+  margin-top: 2px;
+
+  color: #8C8790;
+
+  font-size: 10px;
+}
+
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+
+.counsellor-loading {
+  min-height: 100vh;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+
+  background: #F7F8F7;
+
+  color: #77727C;
+}
+
+
+.loading-spinner {
+  width: 34px;
+  height: 34px;
+
+  border: 3px solid #DFF3E4;
+  border-top-color: #78B98A;
+
+  border-radius: 50%;
+
+  animation:
+    counsellor-spin 0.8s linear infinite;
+
+  margin-bottom: 12px;
+}
+
+
+@keyframes counsellor-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+
+}
+
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+
+.counsellor-error-page {
+  min-height: 100vh;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #F7F8F7;
+}
+
+
+.error-card {
+  max-width: 420px;
+
+  padding: 35px;
+
+  text-align: center;
+
+  background: white;
+
+  border: 1px solid #EAE7EC;
+
+  border-radius: 18px;
+}
+
+
+.error-card > span {
+  font-size: 35px;
+}
+
+
+.error-card h2 {
+  margin: 12px 0 8px;
+}
+
+
+.error-card p {
+  margin: 0 0 20px;
+
+  color: #77727C;
+
+  font-size: 13px;
+}
+
+
+.retry-button {
+  padding: 10px 18px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #DFF3E4;
+
+  color: #426A4D;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1100px) {
+
+  .summary-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 800px) {
+
+  .counsellor-header {
+    padding: 15px 20px;
+
+    align-items: flex-start;
+  }
+
+  .privacy-badge {
+    display: none;
+  }
+
+  .counsellor-user {
+    display: none;
+  }
+
+  .counsellor-main {
+    padding: 25px 20px 45px;
+  }
+
+  .dashboard-intro {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 15px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 500px) {
+
+  .counsellor-header {
+    min-height: 68px;
+  }
+
+  .counsellor-brand h1 {
+    font-size: 18px;
+  }
+
+  .counsellor-brand-icon {
+    width: 39px;
+    height: 39px;
+  }
+
+  .dashboard-intro h2 {
+    font-size: 24px;
+  }
+
+  .analytics-card {
+    padding: 16px;
+  }
+
+}
+
+/* ============================================================
+   SIDEBAR LAYOUT
+   ============================================================ */
+
+.counsellor-layout {
+  min-height: 100vh;
+}
+
+
+.counsellor-layout .counsellor-page {
+  margin-left: 238px;
+}
+
+
+@media (max-width: 850px) {
+
+  .counsellor-layout .counsellor-page {
+    margin-left: 68px;
+  }
+
+}
