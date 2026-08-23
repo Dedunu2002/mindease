@@ -345,27 +345,54 @@ class Goal(db.Model):
 
 # ── Table 7: CommunityPost ────────────────────────────────────
 # Stores anonymous community board posts
+# In app.py — replace / update the CommunityPost model
+# and add the new Reaction model after it
+
 class CommunityPost(db.Model):
     __tablename__ = 'community_posts'
-
     id         = db.Column(db.Integer, primary_key=True)
-    content    = db.Column(db.Text, nullable=False)
-    reactions  = db.Column(db.Text, default='{"heart":0,"star":0,"hug":0}')
-    # reactions stored as JSON: {"heart": 5, "star": 2, "hug": 8}
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content    = db.Column(db.Text,    nullable=False)
     is_flagged = db.Column(db.Boolean, default=False)
-    # counsellors can flag inappropriate posts for removal
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # NO user_id — fully anonymous by design
 
-    def to_dict(self):
+    # Relationship to reactions
+    reactions = db.relationship('Reaction', backref='post', cascade='all, delete-orphan')
+
+    def to_dict(self, current_user_id=None):
+        # Count each reaction type
+        reaction_counts = {'heart': 0, 'star': 0, 'hug': 0}
+        user_reactions  = []
+
+        for r in self.reactions:
+            if r.emoji in reaction_counts:
+                reaction_counts[r.emoji] += 1
+            if current_user_id and r.user_id == current_user_id:
+                user_reactions.append(r.emoji)
+
         return {
-            'id':        self.id,
-            'content':   self.content,
-            'reactions': json.loads(self.reactions),
-            'is_flagged':self.is_flagged,
-            'created_at':self.created_at.isoformat()
+            'id':             self.id,
+            'content':        self.content,
+            'is_flagged':     self.is_flagged,
+            'created_at':     self.created_at.strftime('%d %b %Y, %H:%M'),
+            'reactions':      reaction_counts,
+            'user_reactions': user_reactions,  # emojis this user reacted with
+            'is_own':         self.user_id == current_user_id,
+            # NEVER expose user_id or name here
         }
 
+
+class Reaction(db.Model):
+    __tablename__ = 'reactions'
+    id      = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('community_posts.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),            nullable=False)
+    emoji   = db.Column(db.String(20), nullable=False)  # 'heart' | 'star' | 'hug'
+
+    # One user can only give each emoji to a post once
+    __table_args__ = (
+        db.UniqueConstraint('post_id', 'user_id', 'emoji', name='unique_reaction'),
+    )
 # ── Add Resource model to the database models section ─────────
 class Resource(db.Model):
     __tablename__ = 'resources'
@@ -462,6 +489,21 @@ def login_required(f):
         if 'user_id' not in session:
             return jsonify({'error': 'Login required'}), 401
         return f(*args, **kwargs)
+    return decorated
+
+# ── ADMIN-ONLY ACCESS ─────────────────────────────────────────
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def decorated(*args, **kwargs):
+
+        if session.get('user_role') != 'admin':
+            return jsonify({
+                'error': 'Admin access required'
+            }), 403
+
+        return f(*args, **kwargs)
+
     return decorated
 
 # ── Check-In API ─────────────────────────────────────────────
@@ -1688,6 +1730,125 @@ def delete_goal(goal_id):
     db.session.commit()
     return jsonify({'message': 'Goal deleted'}), 200        
 
+# Add to app.py after goal routes
+
+VALID_EMOJIS = {'heart', 'star', 'hug'}
+
+
+@app.route('/api/posts')
+@login_required
+def get_posts():
+    """
+    Returns all non-flagged posts, newest first.
+    Passes current_user_id so to_dict() can mark which reactions
+    this user has already made, and whether this is their own post.
+    """
+    user_id = session['user_id']
+
+    posts = (CommunityPost.query
+             .filter_by(is_flagged=False)
+             .order_by(CommunityPost.created_at.desc())
+             .limit(50)
+             .all())
+
+    return jsonify([p.to_dict(current_user_id=user_id) for p in posts]), 200
+
+
+@app.route('/api/posts', methods=['POST'])
+@login_required
+def create_post():
+    user_id = session['user_id']
+    data    = request.get_json()
+    content = data.get('content', '').strip()
+
+    if not content:
+        return jsonify({'error': 'Post cannot be empty'}), 400
+    if len(content) > 500:
+        return jsonify({'error': 'Post must be under 500 characters'}), 400
+
+    # Rate limit: max 3 posts per hour per student
+    from datetime import timedelta
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    recent_count = CommunityPost.query.filter(
+        CommunityPost.user_id    == user_id,
+        CommunityPost.created_at >= one_hour_ago
+    ).count()
+
+    if recent_count >= 3:
+        return jsonify({
+            'error': 'You can post up to 3 times per hour. Please wait a while.'
+        }), 429
+
+    post = CommunityPost(user_id=user_id, content=content)
+    db.session.add(post)
+    db.session.commit()
+
+    return jsonify(post.to_dict(current_user_id=user_id)), 201
+
+
+@app.route('/api/posts/<int:post_id>/react', methods=['POST'])
+@login_required
+def react_to_post(post_id):
+    """
+    Toggle a reaction on a post.
+    If user already reacted with this emoji → remove it (toggle off).
+    If not → add it.
+    """
+    user_id = session['user_id']
+    data    = request.get_json()
+    emoji   = data.get('emoji', '')
+
+    if emoji not in VALID_EMOJIS:
+        return jsonify({'error': 'Invalid emoji. Use heart, star, or hug.'}), 400
+
+    post = CommunityPost.query.get(post_id)
+    if not post or post.is_flagged:
+        return jsonify({'error': 'Post not found'}), 404
+
+    existing = Reaction.query.filter_by(
+        post_id=post_id, user_id=user_id, emoji=emoji
+    ).first()
+
+    if existing:
+        # Toggle off — remove the reaction
+        db.session.delete(existing)
+    else:
+        # Add the reaction
+        db.session.add(Reaction(post_id=post_id, user_id=user_id, emoji=emoji))
+
+    db.session.commit()
+
+    # Return updated post data
+    db.session.refresh(post)
+    return jsonify(post.to_dict(current_user_id=user_id)), 200
+
+
+@app.route('/api/posts/<int:post_id>/flag', methods=['POST'])
+@login_required
+def flag_post(post_id):
+    """Mark a post as flagged — it disappears from the board."""
+    post = CommunityPost.query.get(post_id)
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+
+    post.is_flagged = True
+    db.session.commit()
+    return jsonify({'message': 'Post flagged for review'}), 200
+
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+@login_required
+def delete_post(post_id):
+    """Students can only delete their own posts."""
+    user_id = session['user_id']
+    post    = CommunityPost.query.filter_by(id=post_id, user_id=user_id).first()
+    if not post:
+        return jsonify({'error': 'Post not found or not yours'}), 404
+
+    db.session.delete(post)
+    db.session.commit()
+    return jsonify({'message': 'Post deleted'}), 200
+
 # ── GET /api/resources — return all resources ──────────────────
 @app.route('/api/resources')
 @login_required
@@ -1772,7 +1933,14 @@ def register():
     name  = data.get('name', '').strip()
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
-    role  = data.get('role', 'student')  # student / counsellor
+    role = data.get('role', 'student')
+
+# Public registration can only create
+# student or counsellor accounts.
+    if role not in ['student', 'counsellor']:
+        return jsonify({
+        'error': 'Invalid registration role'
+    }), 400
 
     # ── Validation ────────────────────────────────────────────────
     if not name or not email or not password:
@@ -1886,6 +2054,198 @@ def me():
         'name': user.name,
         'role': user.role,
     }), 200
+
+ # ════════════════════════════════════════════════════════════
+# ADMIN — USER MANAGEMENT
+# ════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_get_users():
+
+    users = (
+        User.query
+        .order_by(User.created_at.desc())
+        .all()
+    )
+
+    return jsonify([
+        {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'role': user.role,
+            'status': (
+                'pending'
+                if user.role == 'counsellor' and not user.is_approved
+                else 'active'
+            ),
+            'is_approved': user.is_approved,
+            'created_at': (
+                user.created_at.isoformat()
+                if user.created_at else None
+            )
+        }
+        for user in users
+    ]), 200
+
+@app.route('/api/admin/approve-counsellor/<int:user_id>', methods=['PATCH'])
+@admin_required
+def approve_counsellor(user_id):
+
+    counsellor = User.query.filter_by(
+        id=user_id,
+        role='counsellor'
+    ).first()
+
+    if not counsellor:
+        return jsonify({
+            'error': 'Counsellor not found'
+        }), 404
+
+    if counsellor.is_approved:
+        return jsonify({
+            'error': 'Counsellor is already approved'
+        }), 400
+
+    counsellor.is_approved = True
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Counsellor approved successfully',
+        'user': counsellor.to_dict()
+    }), 200
+
+@app.route('/api/admin/delete-user/<int:user_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_user(user_id):
+
+    current_admin_id = session.get('user_id')
+
+    # Never allow an admin to delete their own account
+    if user_id == current_admin_id:
+        return jsonify({
+            'error': 'You cannot delete your own admin account'
+        }), 400
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({
+            'error': 'User not found'
+        }), 404
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'User deleted successfully'
+    }), 200
+
+@app.route('/api/admin/change-role/<int:user_id>', methods=['PATCH'])
+@admin_required
+def admin_change_role(user_id):
+
+    current_admin_id = session.get('user_id')
+
+    if user_id == current_admin_id:
+        return jsonify({
+            'error': 'You cannot change your own admin role'
+        }), 400
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({
+            'error': 'User not found'
+        }), 404
+
+    data = request.get_json() or {}
+    new_role = data.get('role')
+
+    if new_role not in ['student', 'counsellor', 'admin']:
+        return jsonify({
+            'error': 'Invalid role'
+        }), 400
+
+    user.role = new_role
+
+    # Counsellors must be approved before login
+    if new_role == 'counsellor':
+        user.is_approved = False
+    else:
+        user.is_approved = True
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'User role updated successfully',
+        'user': user.to_dict()
+    }), 200
+
+# ════════════════════════════════════════════════════════════
+# ADMIN — SYSTEM ANALYTICS
+# ════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/analytics', methods=['GET'])
+@admin_required
+def admin_analytics():
+
+    # ── User counts ─────────────────────────────────────────
+
+    total_students = User.query.filter_by(
+        role='student'
+    ).count()
+
+    total_counsellors = User.query.filter_by(
+        role='counsellor'
+    ).count()
+
+    pending_counsellors = User.query.filter_by(
+        role='counsellor',
+        is_approved=False
+    ).count()
+
+    # ── Check-ins this week ─────────────────────────────────
+
+    today = date.today()
+
+    # Monday = 0
+    week_start = today - timedelta(
+        days=today.weekday()
+    )
+
+    checkins_this_week = CheckIn.query.filter(
+        CheckIn.checkin_date >= week_start,
+        CheckIn.checkin_date <= today
+    ).count()
+
+    # ── Appointments ─────────────────────────────────────────
+
+    total_appointments = Appointment.query.count()
+
+    pending_appointments = Appointment.query.filter_by(
+        status='pending'
+    ).count()
+
+    confirmed_appointments = Appointment.query.filter_by(
+        status='confirmed'
+    ).count()
+
+    completed_appointments = Appointment.query.filter_by(
+        status='completed'
+    ).count()
+
+    return jsonify({
+        'total_students': total_students,
+        'total_counsellors': total_counsellors,
+        'pending_counsellors': pending_counsellors,
+        'checkins_this_week': checkins_this_week,
+        'total_appointments': total_appointments,
+        'pending_appointments': pending_appointments,
+        'confirmed_appointments': confirmed_appointments,
+        'completed_appointments': completed_appointments
+    }), 200   
 
 
 # ── Helper: protect any route that needs login ────────────────

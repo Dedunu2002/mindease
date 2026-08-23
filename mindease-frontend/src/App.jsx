@@ -13,6 +13,10 @@ import Register            from './pages/Register'
 import StudentDashboard    from './pages/StudentDashboard'
 import CounsellorDashboard from './pages/CounsellorDashboard'
 import AdminDashboard      from './pages/AdminDashboard'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminCounsellors from './pages/admin/AdminCounsellors'
+import AdminAnalytics from './pages/admin/AdminAnalytics'
+import AdminSettings from './pages/admin/AdminSettings' 
 
 import CheckIn             from './pages/CheckIn'
 import Journal             from './pages/Journal'
@@ -270,6 +274,41 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminUsers />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/counsellors"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminCounsellors />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/analytics"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminAnalytics />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/settings"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminSettings />
+    </ProtectedRoute>
+  }
+/>
 
 
         {/* ==================================================
