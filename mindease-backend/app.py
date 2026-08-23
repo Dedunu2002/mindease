@@ -491,7 +491,10 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# ── ADMIN-ONLY ACCESS ─────────────────────────────────────────
+# ============================================================
+# ADMIN-ONLY ACCESS
+# ============================================================
+
 def admin_required(f):
     @wraps(f)
     @login_required
@@ -2187,11 +2190,22 @@ def admin_change_role(user_id):
 # ADMIN — SYSTEM ANALYTICS
 # ════════════════════════════════════════════════════════════
 
+
+# ── Helper: protect any route that needs login ────────────────
+# Use @login_required above any route that only logged-in users can access
+
+
+# ============================================================
+# ADMIN — SYSTEM ANALYTICS
+# ============================================================
+
 @app.route('/api/admin/analytics', methods=['GET'])
 @admin_required
 def admin_analytics():
 
-    # ── User counts ─────────────────────────────────────────
+    # --------------------------------------------------------
+    # USERS
+    # --------------------------------------------------------
 
     total_students = User.query.filter_by(
         role='student'
@@ -2206,11 +2220,14 @@ def admin_analytics():
         is_approved=False
     ).count()
 
-    # ── Check-ins this week ─────────────────────────────────
+
+    # --------------------------------------------------------
+    # CHECK-INS THIS WEEK
+    # --------------------------------------------------------
 
     today = date.today()
 
-    # Monday = 0
+    # Monday of the current week
     week_start = today - timedelta(
         days=today.weekday()
     )
@@ -2220,7 +2237,10 @@ def admin_analytics():
         CheckIn.checkin_date <= today
     ).count()
 
-    # ── Appointments ─────────────────────────────────────────
+
+    # --------------------------------------------------------
+    # APPOINTMENTS
+    # --------------------------------------------------------
 
     total_appointments = Appointment.query.count()
 
@@ -2236,23 +2256,38 @@ def admin_analytics():
         status='completed'
     ).count()
 
+
+    # --------------------------------------------------------
+    # RESPONSE
+    # --------------------------------------------------------
+
     return jsonify({
-        'total_students': total_students,
-        'total_counsellors': total_counsellors,
-        'pending_counsellors': pending_counsellors,
-        'checkins_this_week': checkins_this_week,
-        'total_appointments': total_appointments,
-        'pending_appointments': pending_appointments,
-        'confirmed_appointments': confirmed_appointments,
-        'completed_appointments': completed_appointments
-    }), 200   
 
+        'total_students':
+            total_students,
 
-# ── Helper: protect any route that needs login ────────────────
-# Use @login_required above any route that only logged-in users can access
+        'total_counsellors':
+            total_counsellors,
 
+        'pending_counsellors':
+            pending_counsellors,
 
+        'checkins_this_week':
+            checkins_this_week,
 
+        'total_appointments':
+            total_appointments,
+
+        'pending_appointments':
+            pending_appointments,
+
+        'confirmed_appointments':
+            confirmed_appointments,
+
+        'completed_appointments':
+            completed_appointments
+
+    }), 200
 
 # Example usage of @login_required (you will use this from Day 9 onwards):
 # @app.route('/api/checkin', methods=['POST'])
