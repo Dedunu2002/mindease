@@ -1,6 +1,6 @@
 # This file handles: database models, AI loading, and all API routes
 
-from flask import Flask, jsonify, request, session
+from flask import Flask, jsonify, request, session, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -13,6 +13,22 @@ import pandas as pd
 import re
 import json
 import bcrypt
+
+from io import BytesIO
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    PageBreak
+)
 
 from functools import wraps
 # ── Initialise app ────────────────────────────────────────────
@@ -2231,6 +2247,7 @@ def counsellor_dashboard_data():
             'error': 'Failed to load counsellor dashboard'
         }), 500
 
+
 # ============================================================
 # COUNSELLOR — APPOINTMENTS
 # ============================================================
@@ -2532,6 +2549,1781 @@ Thank you for using MindEase.
         }
 
     }), 200
+
+# ============================================================
+# COUNSELLOR — STUDENTS
+# Returns students who have appointments with the
+# currently logged-in counsellor.
+# ============================================================
+
+@app.route('/api/counsellor/students', methods=['GET'])
+@counsellor_required
+def counsellor_students():
+
+    try:
+
+        counsellor_id = session['user_id']
+
+        # ----------------------------------------------------
+        # Find all students who have appointments
+        # with this counsellor.
+        # ----------------------------------------------------
+
+        appointments = (
+            Appointment.query
+            .filter_by(
+                counsellor_id=counsellor_id
+            )
+            .order_by(
+                Appointment.requested_date.desc(),
+                Appointment.id.desc()
+            )
+            .all()
+        )
+
+        student_ids = []
+
+        for appointment in appointments:
+
+            if appointment.student_id not in student_ids:
+                student_ids.append(
+                    appointment.student_id
+                )
+
+
+        students = []
+
+        for student_id in student_ids:
+
+            student = User.query.get(student_id)
+
+            if not student:
+                continue
+
+            # ------------------------------------------------
+            # Latest check-in
+            # ------------------------------------------------
+
+            latest_checkin = (
+                CheckIn.query
+                .filter_by(
+                    user_id=student.id
+                )
+                .order_by(
+                    CheckIn.checkin_date.desc(),
+                    CheckIn.id.desc()
+                )
+                .first()
+            )
+
+
+            # ------------------------------------------------
+            # All check-ins for this student
+            # ------------------------------------------------
+
+            checkins = (
+                CheckIn.query
+                .filter_by(
+                    user_id=student.id
+                )
+                .order_by(
+                    CheckIn.checkin_date.desc(),
+                    CheckIn.id.desc()
+                )
+                .all()
+            )
+
+
+            # ------------------------------------------------
+            # Appointment information
+            # ------------------------------------------------
+
+            student_appointments = [
+                a for a in appointments
+                if a.student_id == student.id
+            ]
+
+
+            latest_appointment = (
+                student_appointments[0]
+                if student_appointments
+                else None
+            )
+
+
+            students.append({
+
+                'id':
+                    student.id,
+
+                'name':
+                    student.name,
+
+                'email':
+                    student.email,
+
+                'role':
+                    student.role,
+
+                'latest_risk':
+                    latest_checkin.risk_result
+                    if latest_checkin
+                    else None,
+
+                'last_checkin':
+                    (
+                        latest_checkin.checkin_date.isoformat()
+                        if latest_checkin
+                        and latest_checkin.checkin_date
+                        else None
+                    ),
+
+                'checkin_count':
+                    len(checkins),
+
+                'appointment_count':
+                    len(student_appointments),
+
+                'latest_appointment_status':
+                    (
+                        latest_appointment.status
+                        if latest_appointment
+                        else None
+                    ),
+
+                'latest_appointment_date':
+                    (
+                        latest_appointment.requested_date.isoformat()
+                        if latest_appointment
+                        else None
+                    )
+
+            })
+
+
+        return jsonify({
+
+            'success': True,
+
+            'count':
+                len(students),
+
+            'students':
+                students
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            '❌ Counsellor students error:',
+            e
+        )
+
+        return jsonify({
+
+            'success': False,
+
+            'error':
+                'Failed to load students',
+
+            'details':
+                str(e)
+
+        }), 500
+
+    # ============================================================
+# COUNSELLOR — INDIVIDUAL STUDENT PROGRESS
+# ============================================================
+
+@app.route(
+    '/api/counsellor/students/<int:student_id>/progress',
+    methods=['GET']
+)
+@counsellor_required
+def counsellor_student_progress(student_id):
+
+    try:
+
+        counsellor_id = session['user_id']
+
+        # ----------------------------------------------------
+        # SECURITY CHECK
+        #
+        # The counsellor can only see a student if that
+        # student has an appointment with this counsellor.
+        # ----------------------------------------------------
+
+        appointment_exists = (
+            Appointment.query
+            .filter_by(
+                counsellor_id=counsellor_id,
+                student_id=student_id
+            )
+            .first()
+        )
+
+
+        if not appointment_exists:
+
+            return jsonify({
+
+                'error':
+                    'Student not found or access denied'
+
+            }), 403
+
+
+        # ----------------------------------------------------
+        # STUDENT
+        # ----------------------------------------------------
+
+        student = User.query.get(student_id)
+
+
+        if not student:
+
+            return jsonify({
+
+                'error':
+                    'Student not found'
+
+            }), 404
+
+
+        # ----------------------------------------------------
+        # CHECK-IN HISTORY
+        # ----------------------------------------------------
+
+        checkins = (
+            CheckIn.query
+            .filter_by(
+                user_id=student_id
+            )
+            .order_by(
+                CheckIn.checkin_date.desc(),
+                CheckIn.id.desc()
+            )
+            .all()
+        )
+
+
+        checkin_history = []
+
+
+        for checkin in checkins:
+
+            checkin_history.append({
+
+                'id':
+                    checkin.id,
+
+                'date':
+                    (
+                        checkin.checkin_date.isoformat()
+                        if checkin.checkin_date
+                        else None
+                    ),
+
+                'risk_result':
+                    checkin.risk_result,
+
+                'stress_level':
+                    checkin.stress_level,
+
+                'sleep_hours':
+                    checkin.sleep_hours,
+
+                'physical_activity':
+                    checkin.physical_activity,
+
+                'social_support':
+                    checkin.social_support,
+
+                'study_hours_per_day':
+                    checkin.study_hours_per_day,
+
+                'exam_pressure':
+                    checkin.exam_pressure,
+
+                'academic_performance':
+                    checkin.academic_performance
+
+            })
+
+
+        # ----------------------------------------------------
+        # APPOINTMENTS
+        # ----------------------------------------------------
+
+        appointments = (
+            Appointment.query
+            .filter_by(
+                counsellor_id=counsellor_id,
+                student_id=student_id
+            )
+            .order_by(
+                Appointment.requested_date.desc(),
+                Appointment.id.desc()
+            )
+            .all()
+        )
+
+
+        appointment_history = []
+
+
+        for appointment in appointments:
+
+            appointment_history.append({
+
+                'id':
+                    appointment.id,
+
+                'date':
+                    (
+                        appointment.requested_date.isoformat()
+                        if appointment.requested_date
+                        else None
+                    ),
+
+                'time':
+                    appointment.time_slot,
+
+                'status':
+                    appointment.status,
+
+                'notes':
+                    appointment.notes or ''
+
+            })
+
+
+        # ----------------------------------------------------
+        # LATEST CHECK-IN
+        # ----------------------------------------------------
+
+        latest = (
+            checkins[0]
+            if checkins
+            else None
+        )
+
+
+        return jsonify({
+
+            'success': True,
+
+            'student': {
+
+                'id':
+                    student.id,
+
+                'name':
+                    student.name,
+
+                'email':
+                    student.email
+
+            },
+
+            'latest_checkin': (
+
+                {
+
+                    'date':
+                        latest.checkin_date.isoformat()
+                        if latest.checkin_date
+                        else None,
+
+                    'risk_result':
+                        latest.risk_result,
+
+                    'stress_level':
+                        latest.stress_level,
+
+                    'sleep_hours':
+                        latest.sleep_hours,
+
+                    'physical_activity':
+                        latest.physical_activity,
+
+                    'social_support':
+                        latest.social_support,
+
+                    'academic_performance':
+                        latest.academic_performance
+
+                }
+
+                if latest
+
+                else None
+
+            ),
+
+            'checkins':
+                checkin_history,
+
+            'appointments':
+                appointment_history
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            '❌ Student progress error:',
+            e
+        )
+
+        return jsonify({
+
+            'success': False,
+
+            'error':
+                'Failed to load student progress',
+
+            'details':
+                str(e)
+
+        }), 500
+
+    # ============================================================
+# COUNSELLOR — ANONYMOUS PDF REPORT
+# ============================================================
+
+@app.route(
+    '/api/counsellor/export_report',
+    methods=['GET']
+)
+@counsellor_required
+def counsellor_export_report():
+
+    try:
+
+        # ----------------------------------------------------
+        # DATE RANGE
+        # ----------------------------------------------------
+
+        today = date.today()
+
+        from_date_string = request.args.get(
+            'from'
+        )
+
+        to_date_string = request.args.get(
+            'to'
+        )
+
+        try:
+
+            from_date = (
+                datetime.strptime(
+                    from_date_string,
+                    '%Y-%m-%d'
+                ).date()
+                if from_date_string
+                else today - timedelta(days=30)
+            )
+
+            to_date = (
+                datetime.strptime(
+                    to_date_string,
+                    '%Y-%m-%d'
+                ).date()
+                if to_date_string
+                else today
+            )
+
+        except ValueError:
+
+            return jsonify({
+
+                'error':
+                    'Invalid date format. Use YYYY-MM-DD.'
+
+            }), 400
+
+
+        if from_date > to_date:
+
+            return jsonify({
+
+                'error':
+                    'From date cannot be after To date.'
+
+            }), 400
+
+
+        # ----------------------------------------------------
+        # CURRENT COUNSELLOR
+        # ----------------------------------------------------
+
+        counsellor_id = session['user_id']
+
+
+        # ----------------------------------------------------
+        # CHECK-INS
+        #
+        # These are campus-wide anonymous statistics.
+        # No student names or IDs are included in the PDF.
+        # ----------------------------------------------------
+
+        checkins = (
+            CheckIn.query
+            .filter(
+                CheckIn.checkin_date >= from_date,
+                CheckIn.checkin_date <= to_date
+            )
+            .order_by(
+                CheckIn.checkin_date.asc()
+            )
+            .all()
+        )
+
+
+        total_checkins = len(checkins)
+
+
+        # ----------------------------------------------------
+        # RISK DISTRIBUTION
+        # ----------------------------------------------------
+
+        risk_counts = {
+
+            'Good': 0,
+
+            'Moderate': 0,
+
+            'Poor': 0
+
+        }
+
+
+        for checkin in checkins:
+
+            risk = str(
+                checkin.risk_result or ''
+            ).strip().lower()
+
+
+            if risk in [
+                'low',
+                'good'
+            ]:
+
+                risk_counts['Good'] += 1
+
+
+            elif risk in [
+                'medium',
+                'moderate'
+            ]:
+
+                risk_counts['Moderate'] += 1
+
+
+            elif risk in [
+                'high',
+                'poor'
+            ]:
+
+                risk_counts['Poor'] += 1
+
+
+        if total_checkins > 0:
+
+            risk_percentages = {
+
+                key:
+                    round(
+                        (
+                            value /
+                            total_checkins
+                        ) * 100,
+                        1
+                    )
+
+                for key, value
+                in risk_counts.items()
+
+            }
+
+        else:
+
+            risk_percentages = {
+
+                'Good': 0,
+
+                'Moderate': 0,
+
+                'Poor': 0
+
+            }
+
+
+        # ----------------------------------------------------
+        # WEEKLY TREND
+        # ----------------------------------------------------
+
+        weekly_rows = []
+
+        current_week_start = (
+            from_date
+            - timedelta(
+                days=from_date.weekday()
+            )
+        )
+
+
+        while current_week_start <= to_date:
+
+            week_end = (
+                current_week_start
+                + timedelta(days=6)
+            )
+
+
+            week_checkins = [
+
+                checkin
+
+                for checkin in checkins
+
+                if (
+                    current_week_start
+                    <= checkin.checkin_date
+                    <= week_end
+                )
+
+            ]
+
+
+            good = 0
+
+            moderate = 0
+
+            poor = 0
+
+
+            for checkin in week_checkins:
+
+                risk = str(
+                    checkin.risk_result or ''
+                ).strip().lower()
+
+
+                if risk in [
+                    'low',
+                    'good'
+                ]:
+
+                    good += 1
+
+
+                elif risk in [
+                    'medium',
+                    'moderate'
+                ]:
+
+                    moderate += 1
+
+
+                elif risk in [
+                    'high',
+                    'poor'
+                ]:
+
+                    poor += 1
+
+
+            weekly_rows.append({
+
+                'start':
+                    current_week_start,
+
+                'end':
+                    min(
+                        week_end,
+                        to_date
+                    ),
+
+                'good':
+                    good,
+
+                'moderate':
+                    moderate,
+
+                'poor':
+                    poor,
+
+                'total':
+                    good + moderate + poor
+
+            })
+
+
+            current_week_start += (
+                timedelta(days=7)
+            )
+
+
+        # ----------------------------------------------------
+        # COUNSELLOR APPOINTMENTS
+        #
+        # Only appointments belonging to the logged-in
+        # counsellor are included.
+        # ----------------------------------------------------
+
+        appointments = (
+            Appointment.query
+            .filter(
+                Appointment.counsellor_id
+                == counsellor_id,
+
+                Appointment.requested_date
+                >= from_date,
+
+                Appointment.requested_date
+                <= to_date
+            )
+            .all()
+        )
+
+
+        appointment_counts = {
+
+            'pending': 0,
+
+            'confirmed': 0,
+
+            'completed': 0,
+
+            'rejected': 0
+
+        }
+
+
+        for appointment in appointments:
+
+            status = (
+                appointment.status
+                or 'pending'
+            ).lower()
+
+
+            if status in appointment_counts:
+
+                appointment_counts[
+                    status
+                ] += 1
+
+
+        # ----------------------------------------------------
+        # ANONYMOUS SOS
+        # ----------------------------------------------------
+
+        sos_alerts = (
+            SOSAlert.query
+            .filter(
+                SOSAlert.created_at >= datetime.combine(
+                    from_date,
+                    datetime.min.time()
+                ),
+
+                SOSAlert.created_at <= datetime.combine(
+                    to_date,
+                    datetime.max.time()
+                )
+            )
+            .order_by(
+                SOSAlert.created_at.asc()
+            )
+            .all()
+        )
+
+
+        total_sos = len(sos_alerts)
+
+
+        # ----------------------------------------------------
+        # PDF SETUP
+        # ----------------------------------------------------
+
+        buffer = BytesIO()
+
+
+        document = SimpleDocTemplate(
+
+            buffer,
+
+            pagesize=A4,
+
+            rightMargin=18 * mm,
+
+            leftMargin=18 * mm,
+
+            topMargin=18 * mm,
+
+            bottomMargin=18 * mm
+
+        )
+
+
+        styles = getSampleStyleSheet()
+
+
+        title_style = ParagraphStyle(
+
+            'ReportTitle',
+
+            parent=styles['Title'],
+
+            alignment=TA_CENTER,
+
+            fontSize=20,
+
+            leading=24,
+
+            textColor=colors.HexColor(
+                '#34433A'
+            ),
+
+            spaceAfter=8
+
+        )
+
+
+        subtitle_style = ParagraphStyle(
+
+            'ReportSubtitle',
+
+            parent=styles['Normal'],
+
+            alignment=TA_CENTER,
+
+            fontSize=9,
+
+            textColor=colors.HexColor(
+                '#777777'
+            ),
+
+            spaceAfter=18
+
+        )
+
+
+        heading_style = ParagraphStyle(
+
+            'ReportHeading',
+
+            parent=styles['Heading2'],
+
+            fontSize=13,
+
+            leading=16,
+
+            textColor=colors.HexColor(
+                '#50645A'
+            ),
+
+            spaceBefore=14,
+
+            spaceAfter=8
+
+        )
+
+
+        normal_style = ParagraphStyle(
+
+            'ReportNormal',
+
+            parent=styles['Normal'],
+
+            fontSize=9,
+
+            leading=13,
+
+            textColor=colors.HexColor(
+                '#555555'
+            )
+
+        )
+
+
+        story = []
+
+
+        # ----------------------------------------------------
+        # TITLE
+        # ----------------------------------------------------
+
+        story.append(
+            Paragraph(
+                'MindEase Campus Wellbeing Report',
+                title_style
+            )
+        )
+
+
+        story.append(
+            Paragraph(
+                f'Anonymous statistical report<br/>'
+                f'{from_date.strftime("%d %b %Y")} '
+                f'— '
+                f'{to_date.strftime("%d %b %Y")}',
+                subtitle_style
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # PRIVACY NOTICE
+        # ----------------------------------------------------
+
+        privacy_data = [[
+
+            Paragraph(
+                '<b>Privacy notice:</b> '
+                'This report contains aggregated campus '
+                'statistics only. Individual student names, '
+                'emails, IDs and personal check-in records '
+                'are not included.',
+                normal_style
+            )
+
+        ]]
+
+
+        privacy_table = Table(
+
+            privacy_data,
+
+            colWidths=[
+                174 * mm
+            ]
+
+        )
+
+
+        privacy_table.setStyle(
+            TableStyle([
+
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, -1),
+                    colors.HexColor(
+                        '#E3F2FD'
+                    )
+                ),
+
+                (
+                    'BOX',
+                    (0, 0),
+                    (-1, -1),
+                    0.5,
+                    colors.HexColor(
+                        '#C8DCE8'
+                    )
+                ),
+
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    10
+                ),
+
+                (
+                    'RIGHTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    10
+                ),
+
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                )
+
+            ])
+        )
+
+
+        story.append(
+            privacy_table
+        )
+
+
+        # ----------------------------------------------------
+        # SUMMARY
+        # ----------------------------------------------------
+
+        story.append(
+            Paragraph(
+                '1. Report Summary',
+                heading_style
+            )
+        )
+
+
+        summary_data = [
+
+            [
+                'Metric',
+                'Value'
+            ],
+
+            [
+                'Total check-ins',
+                str(total_checkins)
+            ],
+
+            [
+                'Good',
+                f"{risk_percentages['Good']}%"
+            ],
+
+            [
+                'Moderate',
+                f"{risk_percentages['Moderate']}%"
+            ],
+
+            [
+                'Poor',
+                f"{risk_percentages['Poor']}%"
+            ],
+
+            [
+                'SOS activations',
+                str(total_sos)
+            ]
+
+        ]
+
+
+        summary_table = Table(
+
+            summary_data,
+
+            colWidths=[
+                105 * mm,
+                69 * mm
+            ]
+
+        )
+
+
+        summary_table.setStyle(
+            TableStyle([
+
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        '#DFF3E4'
+                    )
+                ),
+
+                (
+                    'TEXTCOLOR',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        '#405746'
+                    )
+                ),
+
+                (
+                    'FONTNAME',
+                    (0, 0),
+                    (-1, 0),
+                    'Helvetica-Bold'
+                ),
+
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.4,
+                    colors.HexColor(
+                        '#DDE3DF'
+                    )
+                ),
+
+                (
+                    'ROWBACKGROUNDS',
+                    (0, 1),
+                    (-1, -1),
+                    [
+                        colors.white,
+                        colors.HexColor(
+                            '#FAFCFA'
+                        )
+                    ]
+                ),
+
+                (
+                    'FONTSIZE',
+                    (0, 0),
+                    (-1, -1),
+                    9
+                ),
+
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    7
+                ),
+
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    7
+                )
+
+            ])
+        )
+
+
+        story.append(
+            summary_table
+        )
+
+
+        # ----------------------------------------------------
+        # RISK DISTRIBUTION
+        # ----------------------------------------------------
+
+        story.append(
+            Paragraph(
+                '2. Risk Distribution',
+                heading_style
+            )
+        )
+
+
+        risk_data = [
+
+            [
+                'Risk Level',
+                'Number',
+                'Percentage'
+            ],
+
+            [
+                'Good',
+                str(risk_counts['Good']),
+                f"{risk_percentages['Good']}%"
+            ],
+
+            [
+                'Moderate',
+                str(risk_counts['Moderate']),
+                f"{risk_percentages['Moderate']}%"
+            ],
+
+            [
+                'Poor',
+                str(risk_counts['Poor']),
+                f"{risk_percentages['Poor']}%"
+            ]
+
+        ]
+
+
+        risk_table = Table(
+
+            risk_data,
+
+            colWidths=[
+                75 * mm,
+                45 * mm,
+                54 * mm
+            ]
+
+        )
+
+
+        risk_table.setStyle(
+            TableStyle([
+
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        '#EEE8FF'
+                    )
+                ),
+
+                (
+                    'FONTNAME',
+                    (0, 0),
+                    (-1, 0),
+                    'Helvetica-Bold'
+                ),
+
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.4,
+                    colors.HexColor(
+                        '#DDD8E6'
+                    )
+                ),
+
+                (
+                    'FONTSIZE',
+                    (0, 0),
+                    (-1, -1),
+                    9
+                ),
+
+                (
+                    'ALIGN',
+                    (1, 1),
+                    (-1, -1),
+                    'CENTER'
+                ),
+
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    7
+                ),
+
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    7
+                )
+
+            ])
+        )
+
+
+        story.append(
+            risk_table
+        )
+
+
+        # ----------------------------------------------------
+        # WEEKLY TREND
+        # ----------------------------------------------------
+
+        story.append(
+            Paragraph(
+                '3. Weekly Wellbeing Trend',
+                heading_style
+            )
+        )
+
+
+        weekly_data = [
+
+            [
+                'Week',
+                'Good',
+                'Moderate',
+                'Poor',
+                'Total'
+            ]
+
+        ]
+
+
+        for index, row in enumerate(
+            weekly_rows,
+            start=1
+        ):
+
+            weekly_data.append([
+
+                (
+                    f"{row['start'].strftime('%d %b')} "
+                    f"– "
+                    f"{row['end'].strftime('%d %b %Y')}"
+                ),
+
+                str(row['good']),
+
+                str(row['moderate']),
+
+                str(row['poor']),
+
+                str(row['total'])
+
+            ])
+
+
+        weekly_table = Table(
+
+            weekly_data,
+
+            colWidths=[
+                78 * mm,
+                24 * mm,
+                28 * mm,
+                24 * mm,
+                20 * mm
+            ],
+
+            repeatRows=1
+
+        )
+
+
+        weekly_table.setStyle(
+            TableStyle([
+
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        '#DFF3E4'
+                    )
+                ),
+
+                (
+                    'FONTNAME',
+                    (0, 0),
+                    (-1, 0),
+                    'Helvetica-Bold'
+                ),
+
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.4,
+                    colors.HexColor(
+                        '#DDE3DF'
+                    )
+                ),
+
+                (
+                    'ALIGN',
+                    (1, 1),
+                    (-1, -1),
+                    'CENTER'
+                ),
+
+                (
+                    'FONTSIZE',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    6
+                ),
+
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    6
+                )
+
+            ])
+        )
+
+
+        story.append(
+            weekly_table
+        )
+
+
+        # ----------------------------------------------------
+        # APPOINTMENTS
+        # ----------------------------------------------------
+
+        story.append(
+            Paragraph(
+                '4. Counselling Appointment Statistics',
+                heading_style
+            )
+        )
+
+
+        appointment_data = [
+
+            [
+                'Status',
+                'Number'
+            ],
+
+            [
+                'Pending',
+                str(
+                    appointment_counts[
+                        'pending'
+                    ]
+                )
+            ],
+
+            [
+                'Confirmed',
+                str(
+                    appointment_counts[
+                        'confirmed'
+                    ]
+                )
+            ],
+
+            [
+                'Completed',
+                str(
+                    appointment_counts[
+                        'completed'
+                    ]
+                )
+            ],
+
+            [
+                'Rejected',
+                str(
+                    appointment_counts[
+                        'rejected'
+                    ]
+                )
+            ]
+
+        ]
+
+
+        appointment_table = Table(
+
+            appointment_data,
+
+            colWidths=[
+                110 * mm,
+                64 * mm
+            ]
+
+        )
+
+
+        appointment_table.setStyle(
+            TableStyle([
+
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(
+                        '#EEE8FF'
+                    )
+                ),
+
+                (
+                    'FONTNAME',
+                    (0, 0),
+                    (-1, 0),
+                    'Helvetica-Bold'
+                ),
+
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.4,
+                    colors.HexColor(
+                        '#DDD8E6'
+                    )
+                ),
+
+                (
+                    'ALIGN',
+                    (1, 1),
+                    (-1, -1),
+                    'CENTER'
+                ),
+
+                (
+                    'FONTSIZE',
+                    (0, 0),
+                    (-1, -1),
+                    9
+                ),
+
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    7
+                ),
+
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    7
+                )
+
+            ])
+        )
+
+
+        story.append(
+            appointment_table
+        )
+
+
+        # ----------------------------------------------------
+        # SOS
+        # ----------------------------------------------------
+
+        story.append(
+            Paragraph(
+                '5. SOS Activity',
+                heading_style
+            )
+        )
+
+
+        story.append(
+            Paragraph(
+                f'Total anonymous SOS activations '
+                f'during the selected period: '
+                f'<b>{total_sos}</b>',
+                normal_style
+            )
+        )
+
+
+        if sos_alerts:
+
+            sos_rows = [
+
+                [
+                    'Date',
+                    'Time'
+                ]
+
+            ]
+
+
+            for alert in sos_alerts:
+
+                alert_time = (
+                    alert.created_at
+                )
+
+                sos_rows.append([
+
+                    alert_time.strftime(
+                        '%d %b %Y'
+                    ),
+
+                    alert_time.strftime(
+                        '%H:%M'
+                    )
+
+                ])
+
+
+            sos_table = Table(
+
+                sos_rows,
+
+                colWidths=[
+                    90 * mm,
+                    84 * mm
+                ],
+
+                repeatRows=1
+
+            )
+
+
+            sos_table.setStyle(
+                TableStyle([
+
+                    (
+                        'BACKGROUND',
+                        (0, 0),
+                        (-1, 0),
+                        colors.HexColor(
+                            '#FFF4C2'
+                        )
+                    ),
+
+                    (
+                        'FONTNAME',
+                        (0, 0),
+                        (-1, 0),
+                        'Helvetica-Bold'
+                    ),
+
+                    (
+                        'GRID',
+                        (0, 0),
+                        (-1, -1),
+                        0.4,
+                        colors.HexColor(
+                            '#E4D9A7'
+                        )
+                    ),
+
+                    (
+                        'FONTSIZE',
+                        (0, 0),
+                        (-1, -1),
+                        8
+                    ),
+
+                    (
+                        'TOPPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        6
+                    ),
+
+                    (
+                        'BOTTOMPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        6
+                    )
+
+                ])
+            )
+
+
+            story.append(
+                Spacer(
+                    1,
+                    8
+                )
+            )
+
+
+            story.append(
+                sos_table
+            )
+
+
+        else:
+
+            story.append(
+                Paragraph(
+                    'No SOS activations were recorded '
+                    'during the selected period.',
+                    normal_style
+                )
+            )
+
+
+        # ----------------------------------------------------
+        # FOOTER NOTE
+        # ----------------------------------------------------
+
+        story.append(
+            Spacer(
+                1,
+                18
+            )
+        )
+
+
+        story.append(
+            Paragraph(
+                'Generated by MindEase — '
+                'University Student Wellbeing System',
+                subtitle_style
+            )
+        )
+
+
+        document.build(
+            story
+        )
+
+
+        buffer.seek(0)
+
+
+        filename = (
+            f'MindEase_Wellbeing_Report_'
+            f'{from_date.isoformat()}_'
+            f'{to_date.isoformat()}.pdf'
+        )
+
+
+        return send_file(
+
+            buffer,
+
+            mimetype='application/pdf',
+
+            as_attachment=True,
+
+            download_name=filename
+
+        )
+
+
+    except Exception as e:
+
+        print(
+            '❌ Counsellor PDF report error:',
+            e
+        )
+
+        return jsonify({
+
+            'success': False,
+
+            'error':
+                'Failed to generate PDF report',
+
+            'details':
+                str(e)
+
+        }), 500
+
+            
+
 
     
 
