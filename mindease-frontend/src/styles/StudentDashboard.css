@@ -922,6 +922,289 @@
   background: #d8b978;
 }
 
+/* ============================================================
+   DYNAMIC MINI CALENDAR
+============================================================ */
+
+.calendar-day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  border-radius: 14px;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.calendar-day.empty {
+  pointer-events: none;
+}
+
+.calendar-day-number {
+  position: relative;
+  z-index: 2;
+}
+
+.calendar-day:not(.empty):hover {
+  background: #f7faf8;
+}
+
+
+/* ============================================================
+   TODAY
+============================================================ */
+
+.calendar-day.today {
+  background: #dff3e4;
+  color: #315b46;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   CHECK-IN DAY
+============================================================ */
+
+.calendar-day.activity-day {
+  cursor: pointer;
+}
+
+.calendar-activity-dot {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+
+/* ============================================================
+   CHECK-IN DOT
+============================================================ */
+
+.calendar-activity-dot.checkin-dot {
+  background: #78aa8a;
+}
+
+
+/* ============================================================
+   LEGEND
+============================================================ */
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.calendar-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: #71817a;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot.checkin-dot {
+  background: #78aa8a;
+}
+
+.legend-dot.selfcare-dot {
+  background: #e8a5bb;
+}
+
+/* ============================================================
+   WELLBEING TREND CHART
+============================================================ */
+
+.wellbeing-chart {
+  width: 100%;
+  min-height: 310px;
+  margin-top: 12px;
+  position: relative;
+}
+
+
+/* ============================================================
+   SVG WRAPPER
+============================================================ */
+
+.chart-svg-wrapper {
+  width: 100%;
+  height: 310px;
+  overflow: hidden;
+}
+
+.wellbeing-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+
+/* ============================================================
+   GRID
+============================================================ */
+
+.chart-grid-line {
+  stroke: #e9efeb;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+
+/* ============================================================
+   AREA
+============================================================ */
+
+.chart-area {
+  fill: rgba(223, 243, 228, 0.55);
+}
+
+
+/* ============================================================
+   MAIN TREND LINE
+============================================================ */
+
+.chart-main-line {
+  fill: none;
+  stroke: #78aa8a;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* ============================================================
+   POINTS
+============================================================ */
+
+.chart-point-halo {
+  fill: rgba(120, 170, 138, 0.18);
+}
+
+.chart-point {
+  fill: #ffffff;
+  stroke: #78aa8a;
+  stroke-width: 3;
+}
+
+
+/* ============================================================
+   AXIS LABELS
+============================================================ */
+
+.chart-axis-label {
+  fill: #8a9a92;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.chart-date-label {
+  fill: #7f8f88;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+
+/* ============================================================
+   EMPTY STATE
+============================================================ */
+
+.chart-empty-state {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px;
+}
+
+.chart-empty-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: #dff3e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 14px;
+}
+
+.chart-empty-state h3 {
+  margin: 0 0 7px;
+  color: #315444;
+  font-size: 18px;
+}
+
+.chart-empty-state p {
+  margin: 0;
+  color: #819089;
+  font-size: 14px;
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.chart-note {
+  margin-top: 8px;
+  min-height: 48px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #f7faf8;
+  color: #71817a;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.chart-count {
+  white-space: nowrap;
+  font-weight: 600;
+  color: #5e7568;
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 768px) {
+
+  .wellbeing-chart {
+    min-height: 270px;
+  }
+
+  .chart-svg-wrapper {
+    height: 270px;
+  }
+
+  .chart-note {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+}
+
 /* =========================================
    RESPONSIVE
 ========================================= */

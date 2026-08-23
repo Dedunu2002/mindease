@@ -125,9 +125,9 @@ const socialPercentage = Math.min(
   return (
     <div className="student-dashboard">
 
-      <StudentSidebar />
+      
 
-      <main className="student-main">
+      <div className="student-dashboard">
 
         {/* =========================================
             HEADER
@@ -254,107 +254,7 @@ const socialPercentage = Math.min(
         <section className="dashboard-two-column">
 
           {/* Wellbeing chart placeholder */}
-          <article className="dashboard-panel mood-panel">
-
-            <div className="panel-heading">
-
-              <div>
-                <span className="panel-kicker">
-                  YOUR WELLBEING
-                </span>
-
-                <h2>
-                  Mood this week
-                </h2>
-              </div>
-
-              <button className="panel-action">
-                View insights →
-              </button>
-
-            </div>
-
-            <div className="chart-placeholder">
-
-              <div className="chart-y-labels">
-                <span>Great</span>
-                <span>Good</span>
-                <span>Okay</span>
-                <span>Low</span>
-              </div>
-
-              <div className="simple-chart">
-
-                <div className="chart-line chart-line-one" />
-                <div className="chart-line chart-line-two" />
-                <div className="chart-line chart-line-three" />
-
-                <div className="chart-points">
-
-  {checkinHistory.length > 0 ? (
-    checkinHistory
-      .slice()
-      .reverse()
-      .map((item, index) => {
-
-        const total =
-          checkinHistory.length > 1
-            ? checkinHistory.length - 1
-            : 1
-
-        const left =
-          checkinHistory.length === 1
-            ? 50
-            : (index / total) * 84 + 8
-
-        const stressValue =
-          Number(item.stress_level) || 0
-
-        const bottom =
-          90 - (stressValue / 5) * 65
-
-        return (
-          <span
-            key={item.id}
-            style={{
-              left: `${left}%`,
-              bottom: `${bottom}%`
-            }}
-            title={`${item.date} · Stress ${stressValue}/5`}
-          >
-            ●
-          </span>
-        )
-      })
-  ) : (
-    <div className="chart-empty">
-      No check-in data yet
-    </div>
-  )}
-
-</div>
-
-              </div>
-
-              <div className="chart-days">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-              </div>
-
-            </div>
-
-            <div className="chart-note">
-  {checkinHistory.length < 2
-    ? 'Complete more check-ins to build your personal wellbeing trend.'
-    : `${checkinHistory.length} check-ins recorded. Your trend is based on your recent responses.`
-  }
-</div>
-
-          </article>
+          <WellbeingTrendChart checkinHistory={checkinHistory} />
 
 
           {/* Calendar */}
@@ -597,7 +497,7 @@ const socialPercentage = Math.min(
 
         <SOSButton />
 
-      </main>
+      </div>
 
     </div>
   )
@@ -650,6 +550,424 @@ function Indicator({
   )
 }
 
+function WellbeingTrendChart({ checkinHistory }) {
+
+  // ----------------------------------------------------------
+  // Get the last 7 days
+  // ----------------------------------------------------------
+
+  const today = new Date()
+
+  today.setHours(0, 0, 0, 0)
+
+  const sevenDaysAgo = new Date(today)
+
+  sevenDaysAgo.setDate(
+    today.getDate() - 6
+  )
+
+
+  // ----------------------------------------------------------
+  // Filter check-ins to the current 7-day period
+  // ----------------------------------------------------------
+
+  const weekCheckins = checkinHistory
+    .filter(item => {
+
+      if (!item.date) return false
+
+      const date = new Date(`${item.date}T00:00:00`)
+
+      return (
+        date >= sevenDaysAgo &&
+        date <= today
+      )
+
+    })
+    .sort((a, b) => {
+
+      return new Date(`${a.date}T00:00:00`) -
+             new Date(`${b.date}T00:00:00`)
+
+    })
+
+
+  // ----------------------------------------------------------
+  // Create chart points
+  //
+  // Stress:
+  // 1 = very low stress
+  // 5 = very high stress
+  // ----------------------------------------------------------
+
+  const chartWidth = 700
+  const chartHeight = 280
+
+  const paddingLeft = 50
+  const paddingRight = 20
+  const paddingTop = 25
+  const paddingBottom = 45
+
+  const graphWidth =
+    chartWidth - paddingLeft - paddingRight
+
+  const graphHeight =
+    chartHeight - paddingTop - paddingBottom
+
+
+  const getX = (index) => {
+
+    if (weekCheckins.length === 1) {
+      return chartWidth / 2
+    }
+
+    return (
+      paddingLeft +
+      (index / (weekCheckins.length - 1)) *
+      graphWidth
+    )
+
+  }
+
+
+  const getY = (stress) => {
+
+    return (
+      paddingTop +
+      ((5 - stress) / 4) *
+      graphHeight
+    )
+
+  }
+
+
+  // ----------------------------------------------------------
+  // Create SVG path
+  // ----------------------------------------------------------
+
+  const points = weekCheckins.map(
+    (item, index) => {
+
+      const stress =
+        Math.min(
+          5,
+          Math.max(
+            1,
+            Number(item.stress_level) || 1
+          )
+        )
+
+      return {
+        x: getX(index),
+        y: getY(stress),
+        stress,
+        date: item.date,
+        id: item.id
+      }
+
+    }
+  )
+
+
+  const linePath = points.length > 1
+    ? points
+        .map((point, index) => {
+
+          return `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+
+        })
+        .join(' ')
+    : ''
+
+
+  // ----------------------------------------------------------
+  // Friendly status message
+  // ----------------------------------------------------------
+
+  let trendMessage =
+    'Complete a check-in to begin your wellbeing trend.'
+
+  if (weekCheckins.length === 1) {
+
+    trendMessage =
+      'One check-in recorded this week. Keep checking in gently 🌱'
+
+  } else if (weekCheckins.length > 1) {
+
+    const first =
+      points[0].stress
+
+    const last =
+      points[points.length - 1].stress
+
+    if (last < first) {
+
+      trendMessage =
+        'Your stress appears to be easing this week 🌿'
+
+    } else if (last > first) {
+
+      trendMessage =
+        'Your stress has increased recently. Be gentle with yourself 💛'
+
+    } else {
+
+      trendMessage =
+        'Your stress level has remained fairly steady this week 🌸'
+
+    }
+
+  }
+
+
+  return (
+
+    <article className="dashboard-panel mood-panel">
+
+      {/* ====================================================
+          HEADER
+      ==================================================== */}
+
+      <div className="panel-heading">
+
+        <div>
+
+          <span className="panel-kicker">
+            YOUR WELLBEING
+          </span>
+
+          <h2>
+            Wellbeing this week
+          </h2>
+
+        </div>
+
+
+        <button
+          className="panel-action"
+          type="button"
+        >
+          View insights →
+        </button>
+
+      </div>
+
+
+      {/* ====================================================
+          CHART
+      ==================================================== */}
+
+      <div className="wellbeing-chart">
+
+        {weekCheckins.length === 0 ? (
+
+          <div className="chart-empty-state">
+
+            <div className="chart-empty-icon">
+              🌱
+            </div>
+
+            <h3>
+              Your week starts here
+            </h3>
+
+            <p>
+              Complete a daily check-in to see
+              your wellbeing trend.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div className="chart-svg-wrapper">
+
+            <svg
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+              preserveAspectRatio="none"
+              className="wellbeing-svg"
+              role="img"
+              aria-label="Weekly wellbeing stress trend"
+            >
+
+              {/* ==========================================
+                  HORIZONTAL GRID LINES
+              ========================================== */}
+
+              {[1, 2, 3, 4, 5].map(level => {
+
+                const y = getY(level)
+
+                return (
+                  <line
+                    key={level}
+                    x1={paddingLeft}
+                    x2={chartWidth - paddingRight}
+                    y1={y}
+                    y2={y}
+                    className="chart-grid-line"
+                  />
+                )
+
+              })}
+
+
+              {/* ==========================================
+                  AREA UNDER LINE
+              ========================================== */}
+
+              {points.length > 1 && (
+
+                <path
+                  d={`
+                    ${linePath}
+                    L ${points[points.length - 1].x}
+                      ${chartHeight - paddingBottom}
+                    L ${points[0].x}
+                      ${chartHeight - paddingBottom}
+                    Z
+                  `}
+                  className="chart-area"
+                />
+
+              )}
+
+
+              {/* ==========================================
+                  MAIN LINE
+              ========================================== */}
+
+              {points.length > 1 && (
+
+                <path
+                  d={linePath}
+                  className="chart-main-line"
+                />
+
+              )}
+
+
+              {/* ==========================================
+                  DATA POINTS
+              ========================================== */}
+
+              {points.map(point => (
+
+                <g key={point.id}>
+
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="7"
+                    className="chart-point-halo"
+                  />
+
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="4"
+                    className="chart-point"
+                  />
+
+                  <title>
+                    {point.date} · Stress {point.stress}/5
+                  </title>
+
+                </g>
+
+              ))}
+
+
+              {/* ==========================================
+                  Y-AXIS LABELS
+              ========================================== */}
+
+              <text
+                x="5"
+                y={getY(5) + 5}
+                className="chart-axis-label"
+              >
+                High
+              </text>
+
+              <text
+                x="5"
+                y={getY(3) + 5}
+                className="chart-axis-label"
+              >
+                Moderate
+              </text>
+
+              <text
+                x="5"
+                y={getY(1) + 5}
+                className="chart-axis-label"
+              >
+                Low
+              </text>
+
+
+              {/* ==========================================
+                  X-AXIS DATES
+              ========================================== */}
+
+              {points.map(point => (
+
+                <text
+                  key={`date-${point.id}`}
+                  x={point.x}
+                  y={chartHeight - 12}
+                  textAnchor="middle"
+                  className="chart-date-label"
+                >
+                  {new Date(
+                    `${point.date}T00:00:00`
+                  ).toLocaleDateString(
+                    'en-US',
+                    {
+                      weekday: 'short'
+                    }
+                  )}
+                </text>
+
+              ))}
+
+            </svg>
+
+          </div>
+
+        )}
+
+      </div>
+
+
+      {/* ====================================================
+          FOOTER
+      ==================================================== */}
+
+      <div className="chart-note">
+
+        <span>
+          {trendMessage}
+        </span>
+
+        <span className="chart-count">
+
+          {weekCheckins.length}
+          {' '}
+          {weekCheckins.length === 1
+            ? 'check-in'
+            : 'check-ins'}
+
+        </span>
+
+      </div>
+
+    </article>
+
+  )
+}
+
 function ResourceCard({
   icon,
   category,
@@ -695,42 +1013,167 @@ function ResourceCard({
 
 
 function MiniCalendar({ checkinHistory }) {
-  const days = [
-    '', '', '', '', '',
-    1, 2,
-    3, 4, 5, 6, 7, 8, 9,
-    10, 11, 12, 13, 14, 15, 16,
-    17, 18, 19, 20, 21, 22, 23,
-    24, 25, 26, 27, 28, 29, 30,
-    31
-  ]
+
+  const today = new Date()
+
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  )
+
+  const year = currentMonth.getFullYear()
+  const month = currentMonth.getMonth()
+
+  // ----------------------------------------------------------
+  // Month information
+  // ----------------------------------------------------------
+
+  const monthName = currentMonth.toLocaleString('default', {
+    month: 'long'
+  })
+
+  const firstDay = new Date(year, month, 1).getDay()
+
+  // Convert Sunday-first JS format to Monday-first calendar
+  const mondayFirstOffset = firstDay === 0 ? 6 : firstDay - 1
+
+  const daysInMonth = new Date(
+    year,
+    month + 1,
+    0
+  ).getDate()
+
+
+  // ----------------------------------------------------------
+  // Create calendar cells
+  // ----------------------------------------------------------
+
+  const calendarDays = []
+
+  for (let i = 0; i < mondayFirstOffset; i++) {
+    calendarDays.push(null)
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    calendarDays.push(day)
+  }
+
+
+  // ----------------------------------------------------------
+  // Real check-in dates from backend
+  // ----------------------------------------------------------
 
   const checkinDates = new Set(
-  checkinHistory.map(item => item.date)
-)
+    checkinHistory
+      .map(item => item.date)
+      .filter(Boolean)
+  )
+
+
+  // ----------------------------------------------------------
+  // Format date as YYYY-MM-DD
+  // ----------------------------------------------------------
+
+  const formatDate = (day) => {
+
+    const monthNumber = String(month + 1).padStart(2, '0')
+    const dayNumber = String(day).padStart(2, '0')
+
+    return `${year}-${monthNumber}-${dayNumber}`
+  }
+
+
+  // ----------------------------------------------------------
+  // Check today's date
+  // ----------------------------------------------------------
+
+  const isToday = (day) => {
+
+    if (!day) return false
+
+    return (
+      day === today.getDate() &&
+      month === today.getMonth() &&
+      year === today.getFullYear()
+    )
+  }
+
+
+  // ----------------------------------------------------------
+  // Previous month
+  // ----------------------------------------------------------
+
+  const goToPreviousMonth = () => {
+
+    setCurrentMonth(
+      new Date(year, month - 1, 1)
+    )
+  }
+
+
+  // ----------------------------------------------------------
+  // Next month
+  // ----------------------------------------------------------
+
+  const goToNextMonth = () => {
+
+    setCurrentMonth(
+      new Date(year, month + 1, 1)
+    )
+  }
+
 
   return (
+
     <article className="dashboard-panel calendar-panel">
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="panel-heading">
 
         <div>
+
           <span className="panel-kicker">
             YOUR ROUTINE
           </span>
 
-          <h2>August 2026</h2>
+          <h2>
+            {monthName} {year}
+          </h2>
+
         </div>
 
+
         <div className="calendar-controls">
-          <button>‹</button>
-          <button>›</button>
+
+          <button
+            type="button"
+            onClick={goToPreviousMonth}
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            onClick={goToNextMonth}
+            aria-label="Next month"
+          >
+            ›
+          </button>
+
         </div>
 
       </div>
 
 
+      {/* =====================================================
+          WEEKDAYS
+      ===================================================== */}
+
       <div className="calendar-weekdays">
+
         <span>M</span>
         <span>T</span>
         <span>W</span>
@@ -738,46 +1181,101 @@ function MiniCalendar({ checkinHistory }) {
         <span>F</span>
         <span>S</span>
         <span>S</span>
+
       </div>
 
+
+      {/* =====================================================
+          CALENDAR
+      ===================================================== */}
 
       <div className="calendar-grid">
 
-        {days.map((day, index) => (
-          <div
-            key={index}
-            className={`calendar-day ${
-  day === 20 ? 'today' : ''
-} ${
-  day &&
-  checkinDates.has(
-    `2026-08-${String(day).padStart(2, '0')}`
-  )
-    ? 'activity-day'
-    : ''
-}`}
-          >
-            {day}
-          </div>
-        ))}
+        {calendarDays.map((day, index) => {
+
+          if (!day) {
+
+            return (
+              <div
+                key={`empty-${index}`}
+                className="calendar-day empty"
+              />
+            )
+
+          }
+
+
+          const dateString = formatDate(day)
+
+          const hasCheckin =
+            checkinDates.has(dateString)
+
+
+          return (
+
+            <div
+              key={dateString}
+              className={`
+                calendar-day
+                ${isToday(day) ? 'today' : ''}
+                ${hasCheckin ? 'activity-day' : ''}
+              `}
+              title={
+                hasCheckin
+                  ? `${dateString} · Check-in completed`
+                  : dateString
+              }
+            >
+
+              <span className="calendar-day-number">
+                {day}
+              </span>
+
+
+              {/* Real check-in indicator */}
+
+              {hasCheckin && (
+                <span
+                  className="calendar-activity-dot checkin-dot"
+                  aria-label="Check-in completed"
+                />
+              )}
+
+            </div>
+
+          )
+
+        })}
 
       </div>
 
+
+      {/* =====================================================
+          LEGEND
+      ===================================================== */}
 
       <div className="calendar-legend">
 
         <span>
+
           <i className="legend-dot checkin-dot" />
+
           Check-in
+
         </span>
 
+
         <span>
+
           <i className="legend-dot selfcare-dot" />
+
           Self-care
+
         </span>
 
       </div>
 
     </article>
+
   )
 }

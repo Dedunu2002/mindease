@@ -1599,7 +1599,94 @@ def get_appointments():
                .filter_by(student_id=user_id)
                .order_by(Appointment.requested_date.desc())
                .all())
-    return jsonify([a.to_dict() for a in appts]), 200        
+    return jsonify([a.to_dict() for a in appts]), 200
+
+# Add to app.py after booking routes
+
+@app.route('/api/goals', methods=['POST'])
+@login_required
+def create_goal():
+    user_id = session['user_id']
+    data    = request.get_json()
+    text    = data.get('goal_text', '').strip()
+
+    if not text:
+        return jsonify({'error': 'Goal text cannot be empty'}), 400
+    if len(text) > 200:
+        return jsonify({'error': 'Goal must be under 200 characters'}), 400
+
+    # Week start = Monday of current week
+    from datetime import date, timedelta
+    today      = date.today()
+    week_start = today - timedelta(days=today.weekday())
+
+    # Only one active goal per week per student
+    existing = Goal.query.filter_by(
+        user_id         = user_id,
+        week_start_date = week_start,
+        status          = 'pending'
+    ).first()
+
+    if existing:
+        return jsonify({'error': 'You already have an active goal this week. Mark it before setting a new one.'}), 409
+
+    goal = Goal(
+        user_id         = user_id,
+        goal_text       = text,
+        week_start_date = week_start,
+        status          = 'pending',
+    )
+    db.session.add(goal)
+    db.session.commit()
+
+    return jsonify(goal.to_dict()), 201
+
+
+@app.route('/api/goals')
+@login_required
+def get_goals():
+    user_id = session['user_id']
+    goals   = (Goal.query
+               .filter_by(user_id=user_id)
+               .order_by(Goal.week_start_date.desc())
+               .limit(12)
+               .all())
+    return jsonify([g.to_dict() for g in goals]), 200
+
+
+@app.route('/api/goals/<int:goal_id>', methods=['PATCH'])
+@login_required
+def update_goal(goal_id):
+    """Mark a goal as achieved or not_achieved"""
+    user_id = session['user_id']
+    goal    = Goal.query.filter_by(id=goal_id, user_id=user_id).first()
+
+    if not goal:
+        return jsonify({'error': 'Goal not found'}), 404
+
+    data   = request.get_json()
+    status = data.get('status')
+
+    if status not in ['achieved', 'not_achieved']:
+        return jsonify({'error': 'Status must be achieved or not_achieved'}), 400
+
+    goal.status = status
+    db.session.commit()
+    return jsonify(goal.to_dict()), 200
+
+
+@app.route('/api/goals/<int:goal_id>', methods=['DELETE'])
+@login_required
+def delete_goal(goal_id):
+    user_id = session['user_id']
+    goal    = Goal.query.filter_by(id=goal_id, user_id=user_id).first()
+
+    if not goal:
+        return jsonify({'error': 'Goal not found'}), 404
+
+    db.session.delete(goal)
+    db.session.commit()
+    return jsonify({'message': 'Goal deleted'}), 200        
 
 # ── GET /api/resources — return all resources ──────────────────
 @app.route('/api/resources')

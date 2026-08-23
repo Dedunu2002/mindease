@@ -50,7 +50,7 @@ export default function StudentSidebar() {
 
         {navItem('/student-dashboard', '⌂', 'Dashboard')}
         {navItem('/checkin', '💛', 'My Mood')}
-        {navItem('/insights', '◒', 'My Insights')}
+        {navItem('/weekly-sentiment', '◒', 'My Insights')}
         {navItem('/journal', '✎', 'Journal')}
         {navItem('/chat', '✦', 'MindBot')}
 

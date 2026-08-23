@@ -111,6 +111,7 @@ export default function CheckIn() {
   }
 
   return (
+    
     <div className="checkin-page">
 
       {/* Header */}

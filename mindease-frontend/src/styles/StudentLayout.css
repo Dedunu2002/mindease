@@ -1,0 +1,42 @@
+.student-layout {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  background: #fafcfb;
+}
+
+.student-layout-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: 270px;
+  padding: 32px 36px;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 1100px) {
+  .student-layout-content {
+    margin-left: 240px;
+    padding: 28px;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 768px) {
+  .student-layout {
+    display: block;
+  }
+
+  .student-layout-content {
+    margin-left: 0;
+    padding: 20px 16px;
+    padding-top: 84px;
+  }
+}

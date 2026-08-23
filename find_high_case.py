@@ -1,243 +1,387 @@
 import joblib
-import pandas as pd
+import json
 import random
+import warnings
+import pandas as pd
+from pathlib import Path
 
-print("=" * 70)
-print("MINDEASE MODEL - SEARCHING FOR HIGH-RISK REGION")
-print("=" * 70)
+# Hide the repetitive scikit-learn/joblib warnings
+warnings.filterwarnings("ignore")
 
-# ------------------------------------------------------------
+# ============================================================
+# PATHS
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_DIR = BASE_DIR / "mindease-backend" / "ai_models"
+
+MODEL_PATH = MODEL_DIR / "mindease_risk_model_final.pkl"
+FEATURES_PATH = MODEL_DIR / "mindease_risk_features.json"
+ENCODERS_PATH = MODEL_DIR / "mindease_risk_feature_encoders.pkl"
+LABEL_ENCODER_PATH = MODEL_DIR / "mindease_risk_label_encoder.pkl"
+
+
+# ============================================================
 # LOAD MODEL
-# ------------------------------------------------------------
+# ============================================================
 
-model = joblib.load(
-    "mindease-backend/ai_models/mindease_risk_model_final.pkl"
-)
+print("=" * 70)
+print("MINDEASE HIGH-RISK SEARCH")
+print("=" * 70)
 
-risk_encoder = joblib.load(
-    "mindease-backend/ai_models/mindease_risk_label_encoder.pkl"
-)
+print("\nLoading model files...")
 
-feature_encoders = joblib.load(
-    "mindease-backend/ai_models/mindease_risk_feature_encoders.pkl"
-)
+model = joblib.load(MODEL_PATH)
 
-features = [
-    "age",
-    "gender",
-    "academic_year",
-    "study_hours_per_day",
-    "exam_pressure",
-    "academic_performance",
-    "stress_level",
-    "sleep_hours",
-    "physical_activity",
-    "social_support",
-    "screen_time",
-    "internet_usage",
-    "financial_stress",
-    "family_expectation"
-]
+with open(FEATURES_PATH, "r") as f:
+    features = json.load(f)
+
+feature_encoders = joblib.load(ENCODERS_PATH)
+label_encoder = joblib.load(LABEL_ENCODER_PATH)
+
+print("✅ Model loaded")
+print("✅ Features loaded")
+print("✅ Encoders loaded")
+print("✅ Label encoder loaded")
 
 print("\nModel classes:")
-print(risk_encoder.classes_)
+print(label_encoder.classes_)
 
-# ------------------------------------------------------------
-# TRACK BEST RESULTS
-# ------------------------------------------------------------
+print("\nFeatures:")
+print(features)
+
+
+# ============================================================
+# CREATE TEST CASES
+# ============================================================
+
+def generate_cases(number):
+
+    cases = []
+
+    for _ in range(number):
+
+        cases.append({
+            "age": random.randint(18, 30),
+
+            "gender": random.choice([
+                "Male",
+                "Female"
+            ]),
+
+            "academic_year": random.randint(1, 4),
+
+            "study_hours_per_day": random.uniform(0, 20),
+
+            "exam_pressure": random.uniform(1, 5),
+
+            "academic_performance": random.uniform(0, 100),
+
+            "stress_level": random.uniform(1, 5),
+
+            "sleep_hours": random.uniform(2, 10),
+
+            "physical_activity": random.uniform(0, 10),
+
+            "social_support": random.uniform(1, 10),
+
+            "screen_time": random.uniform(0, 15),
+
+            "internet_usage": random.uniform(0, 20),
+
+            "financial_stress": random.uniform(1, 5),
+
+            "family_expectation": random.uniform(1, 5)
+        })
+
+    return cases
+
+
+# ============================================================
+# CONVERT CASES TO DATAFRAME
+# ============================================================
+
+def prepare_dataframe(cases):
+
+    df = pd.DataFrame(cases)
+
+    # Make sure columns are in exactly the same order
+    df = df[features]
+
+    # Apply the same categorical encoders
+    for column, encoder in feature_encoders.items():
+
+        if column in df.columns:
+
+            values = df[column].astype(str)
+
+            known_values = set(
+                str(x) for x in encoder.classes_
+            )
+
+            df[column] = values.apply(
+                lambda value:
+                    encoder.transform([value])[0]
+                    if value in known_values
+                    else 0
+            )
+
+    return df
+
+
+# ============================================================
+# SEARCH
+# ============================================================
+
+TOTAL_CASES = 50000
+BATCH_SIZE = 5000
 
 best_high_probability = -1
-best_high_case = None
+best_case = None
+best_prediction = None
+best_probabilities = None
 
-best_medium_probability = -1
-best_medium_case = None
+high_found = False
 
-best_low_probability = -1
-best_low_case = None
 
-high_predictions = 0
-medium_predictions = 0
-low_predictions = 0
+print("\n")
+print("=" * 70)
+print(f"SEARCHING {TOTAL_CASES:,} POSSIBLE CASES")
+print("=" * 70)
 
-# ------------------------------------------------------------
-# SEARCH
-# ------------------------------------------------------------
 
-for attempt in range(100000):
+for start in range(0, TOTAL_CASES, BATCH_SIZE):
 
-    data = {
-        "age": random.randint(18, 30),
-
-        "gender": random.choice([
-            "Male",
-            "Female"
-        ]),
-
-        "academic_year": random.randint(1, 4),
-
-        "study_hours_per_day":
-            round(random.uniform(0, 14), 1),
-
-        "exam_pressure":
-            random.randint(1, 5),
-
-        "academic_performance":
-            random.randint(0, 100),
-
-        "stress_level":
-            random.randint(1, 5),
-
-        "sleep_hours":
-            round(random.uniform(2, 12), 1),
-
-        "physical_activity":
-            random.randint(1, 7),
-
-        "social_support":
-            random.randint(1, 10),
-
-        "screen_time":
-            round(random.uniform(0, 16), 1),
-
-        "internet_usage":
-            round(random.uniform(0, 16), 1),
-
-        "financial_stress":
-            random.randint(1, 5),
-
-        "family_expectation":
-            random.randint(1, 5)
-    }
-
-    df = pd.DataFrame([data])
-
-    # Encode categorical features
-    for column, encoder in feature_encoders.items():
-        if column in df.columns:
-            df[column] = encoder.transform(df[column])
-
-    X = df[features]
-
-    prediction = model.predict(X)
-    probabilities = model.predict_proba(X)[0]
-
-    risk = risk_encoder.inverse_transform(prediction)[0]
-
-    # Map probabilities correctly
-    probability_map = dict(
-        zip(
-            risk_encoder.classes_,
-            probabilities
-        )
+    current_size = min(
+        BATCH_SIZE,
+        TOTAL_CASES - start
     )
 
-    high_prob = probability_map.get("High", 0)
-    medium_prob = probability_map.get("Medium", 0)
-    low_prob = probability_map.get("Low", 0)
+    cases = generate_cases(current_size)
 
-    # Count predictions
-    if risk == "High":
-        high_predictions += 1
+    df = prepare_dataframe(cases)
 
-    elif risk == "Medium":
-        medium_predictions += 1
+    # --------------------------------------------------------
+    # Batch prediction
+    # --------------------------------------------------------
 
-    elif risk == "Low":
-        low_predictions += 1
+    predictions = model.predict(df)
 
-    # Best HIGH probability
-    if high_prob > best_high_probability:
-        best_high_probability = high_prob
-        best_high_case = data.copy()
-
-    # Best MEDIUM probability
-    if medium_prob > best_medium_probability:
-        best_medium_probability = medium_prob
-        best_medium_case = data.copy()
-
-    # Best LOW probability
-    if low_prob > best_low_probability:
-        best_low_probability = low_prob
-        best_low_case = data.copy()
+    probabilities = model.predict_proba(df)
 
 
-# ------------------------------------------------------------
-# RESULTS
-# ------------------------------------------------------------
+    # --------------------------------------------------------
+    # Find High class
+    # --------------------------------------------------------
 
-print("\n" + "=" * 70)
-print("SEARCH COMPLETE")
-print("=" * 70)
+    high_class_number = None
 
-print("\nPrediction counts:")
-print("High   :", high_predictions)
-print("Medium :", medium_predictions)
-print("Low    :", low_predictions)
+    for model_class in model.classes_:
 
-# ------------------------------------------------------------
-# BEST HIGH PROBABILITY
-# ------------------------------------------------------------
+        label = label_encoder.inverse_transform(
+            [model_class]
+        )[0]
 
-print("\n" + "=" * 70)
-print("BEST HIGH-PROBABILITY CASE")
-print("=" * 70)
+        if str(label).lower() == "high":
 
-print(f"\nHighest High probability found: {best_high_probability:.4f}")
+            high_class_number = model_class
+            break
 
-print("\nInput values:")
 
-for key, value in best_high_case.items():
-    print(f"{key:25s}: {value}")
+    if high_class_number is None:
 
-# Recalculate exact probabilities
-df = pd.DataFrame([best_high_case])
+        print("\n❌ ERROR: Model does not contain a High class.")
 
-for column, encoder in feature_encoders.items():
-    if column in df.columns:
-        df[column] = encoder.transform(df[column])
+        print(
+            "Available classes:",
+            label_encoder.classes_
+        )
 
-prediction = model.predict(df[features])
-probabilities = model.predict_proba(df[features])[0]
+        break
 
-risk = risk_encoder.inverse_transform(prediction)[0]
 
-print("\nPrediction:", risk)
+    high_index = list(
+        model.classes_
+    ).index(high_class_number)
 
-print("\nProbabilities:")
 
-for label, probability in zip(
-    risk_encoder.classes_,
-    probabilities
-):
-    print(f"{label:10s}: {probability:.4f}")
+    high_probabilities = probabilities[:, high_index]
 
-# ------------------------------------------------------------
-# INTERPRETATION
-# ------------------------------------------------------------
 
-print("\n" + "=" * 70)
-print("INTERPRETATION")
-print("=" * 70)
+    # --------------------------------------------------------
+    # Find best case in this batch
+    # --------------------------------------------------------
 
-if high_predictions > 0:
+    batch_best_index = high_probabilities.argmax()
 
-    print("""
-The model DOES predict High risk for some inputs.
+    batch_best_probability = high_probabilities[
+        batch_best_index
+    ]
 
-Use the best High-risk case above
-to test the React check-in form.
-""")
 
-else:
+    if batch_best_probability > best_high_probability:
 
-    print("""
-The model did NOT predict High risk in 100,000
-random test cases.
+        best_high_probability = batch_best_probability
 
-This does NOT automatically mean the model is broken.
+        best_case = cases[batch_best_index]
 
-The High class may be extremely difficult to reach
-because of the way the model was trained.
-The highest High probability above is important
-for diagnosing this.
-""")
+        best_prediction = label_encoder.inverse_transform(
+            [predictions[batch_best_index]]
+        )[0]
+
+        best_probabilities = probabilities[
+            batch_best_index
+        ]
+
+
+    # --------------------------------------------------------
+    # Check whether High was actually predicted
+    # --------------------------------------------------------
+
+    high_prediction_indices = []
+
+    for i, prediction in enumerate(predictions):
+
+        label = label_encoder.inverse_transform(
+            [prediction]
+        )[0]
+
+        if str(label).lower() == "high":
+
+            high_prediction_indices.append(i)
+
+
+    print(
+        f"Checked {start + current_size:>6,} / "
+        f"{TOTAL_CASES:,} | "
+        f"Best High probability: "
+        f"{best_high_probability:.4f}"
+    )
+
+
+    # --------------------------------------------------------
+    # HIGH FOUND
+    # --------------------------------------------------------
+
+    if high_prediction_indices:
+
+        index = high_prediction_indices[0]
+
+        found_case = cases[index]
+
+        found_probabilities = probabilities[index]
+
+        found_prediction = label_encoder.inverse_transform(
+            [predictions[index]]
+        )[0]
+
+
+        print("\n")
+        print("=" * 70)
+        print("🎯 HIGH-RISK CASE FOUND!")
+        print("=" * 70)
+
+        print("\nENTER THESE VALUES IN YOUR CHECK-IN FORM:\n")
+
+        for key, value in found_case.items():
+
+            if isinstance(value, float):
+
+                print(
+                    f"{key:25}: {value:.2f}"
+                )
+
+            else:
+
+                print(
+                    f"{key:25}: {value}"
+                )
+
+
+        print("\nMODEL PROBABILITIES:\n")
+
+        for model_class, probability in zip(
+            model.classes_,
+            found_probabilities
+        ):
+
+            label = label_encoder.inverse_transform(
+                [model_class]
+            )[0]
+
+            print(
+                f"{label:10}: {probability:.4f}"
+            )
+
+
+        print("\nFINAL PREDICTION:")
+        print(found_prediction)
+
+        print("=" * 70)
+
+        high_found = True
+
+        break
+
+
+# ============================================================
+# NO HIGH FOUND
+# ============================================================
+
+if not high_found:
+
+    print("\n")
+    print("=" * 70)
+    print("NO HIGH PREDICTION FOUND")
+    print("=" * 70)
+
+    print(
+        f"\nTested {TOTAL_CASES:,} combinations."
+    )
+
+    print(
+        f"Highest High probability found: "
+        f"{best_high_probability:.4f}"
+    )
+
+    print("\nBEST CASE FOUND:\n")
+
+    if best_case:
+
+        for key, value in best_case.items():
+
+            if isinstance(value, float):
+
+                print(
+                    f"{key:25}: {value:.2f}"
+                )
+
+            else:
+
+                print(
+                    f"{key:25}: {value}"
+                )
+
+
+        print(
+            "\nPredicted class:",
+            best_prediction
+        )
+
+
+        print("\nProbabilities:\n")
+
+        for model_class, probability in zip(
+            model.classes_,
+            best_probabilities
+        ):
+
+            label = label_encoder.inverse_transform(
+                [model_class]
+            )[0]
+
+            print(
+                f"{label:10}: {probability:.4f}"
+            )
+
+    print("=" * 70)
