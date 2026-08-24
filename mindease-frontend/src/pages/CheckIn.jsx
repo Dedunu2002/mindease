@@ -206,14 +206,15 @@ export default function CheckIn() {
             <div className="form-grid">
 
               <NumberField
-                label="Age"
-                name="age"
-                value={form.age}
-                onChange={handleChange}
-                min="16"
-                max="100"
-                placeholder="e.g. 22"
-              />
+  label="Age"
+  name="age"
+  value={form.age}
+  onChange={handleChange}
+  min="17"
+  max="29"
+  step="1"
+  placeholder="e.g. 22"
+/>
 
               <SelectField
                 label="Gender"
@@ -228,18 +229,17 @@ export default function CheckIn() {
               />
 
               <SelectField
-                label="Academic Year"
-                name="academic_year"
-                value={form.academic_year}
-                onChange={handleChange}
-                options={[
-                  ['1', 'Year 1'],
-                  ['2', 'Year 2'],
-                  ['3', 'Year 3'],
-                  ['4', 'Year 4'],
-                  ['5', 'Year 5']
-                ]}
-              />
+  label="Academic Year"
+  name="academic_year"
+  value={form.academic_year}
+  onChange={handleChange}
+  options={[
+    ['1', 'Year 1'],
+    ['2', 'Year 2'],
+    ['3', 'Year 3'],
+    ['4', 'Year 4']
+  ]}
+/>
 
             </div>
 
@@ -255,25 +255,26 @@ export default function CheckIn() {
             <div className="form-grid">
 
               <NumberField
-                label="Study Hours per Day"
-                name="study_hours_per_day"
-                value={form.study_hours_per_day}
-                onChange={handleChange}
-                min="0"
-                max="24"
-                step="0.5"
-                placeholder="e.g. 4"
-              />
+  label="Study Hours per Day"
+  name="study_hours_per_day"
+  value={form.study_hours_per_day}
+  onChange={handleChange}
+  min="0"
+  max="14"
+  step="0.5"
+  placeholder="e.g. 4"
+/>
 
               <NumberField
-                label="Academic Performance"
-                name="academic_performance"
-                value={form.academic_performance}
-                onChange={handleChange}
-                min="0"
-                max="100"
-                placeholder="e.g. 75"
-              />
+  label="Academic Performance"
+  name="academic_performance"
+  value={form.academic_performance}
+  onChange={handleChange}
+  min="42.37"
+  max="97.25"
+  step="0.01"
+  placeholder="e.g. 75"
+/>
 
             </div>
 
@@ -282,7 +283,8 @@ export default function CheckIn() {
               name="exam_pressure"
               value={form.exam_pressure}
               onChange={handleChange}
-              max={5}
+              min={1}
+              max={10}
               low="Very low"
               high="Very high"
             />
@@ -297,45 +299,48 @@ export default function CheckIn() {
           >
 
             <ScaleField
-              label="How stressed have you been feeling?"
-              name="stress_level"
-              value={form.stress_level}
-              onChange={handleChange}
-              max={5}
-              low="Very low"
-              high="Very high"
-            />
+  label="How stressed have you been feeling?"
+  name="stress_level"
+  value={form.stress_level}
+  onChange={handleChange}
+  min={0}
+  max={10}
+  low="Very low"
+  high="Very high"
+/>
 
             <NumberField
-              label="How many hours do you usually sleep per night?"
-              name="sleep_hours"
-              value={form.sleep_hours}
-              onChange={handleChange}
-              min="0"
-              max="24"
-              step="0.5"
-              placeholder="e.g. 7"
-            />
+  label="How many hours do you usually sleep per night?"
+  name="sleep_hours"
+  value={form.sleep_hours}
+  onChange={handleChange}
+  min="3"
+  max="10"
+  step="0.5"
+  placeholder="e.g. 7"
+/>
+
+           <ScaleField
+  label="How physically active are you?"
+  name="physical_activity"
+  value={form.physical_activity}
+  onChange={handleChange}
+  min={0}
+  max={7}
+  low="Very inactive"
+  high="Very active"
+/>
 
             <ScaleField
-              label="How physically active are you?"
-              name="physical_activity"
-              value={form.physical_activity}
-              onChange={handleChange}
-              max={7}
-              low="Very inactive"
-              high="Very active"
-            />
-
-            <ScaleField
-              label="How much social support do you feel you have?"
-              name="social_support"
-              value={form.social_support}
-              onChange={handleChange}
-              max={10}
-              low="Very little"
-              high="Very strong"
-            />
+  label="How much social support do you feel you have?"
+  name="social_support"
+  value={form.social_support}
+  onChange={handleChange}
+  min={0}
+  max={10}
+  low="Very little"
+  high="Very strong"
+/>
 
           </CheckinSection>
 
@@ -349,48 +354,50 @@ export default function CheckIn() {
             <div className="form-grid">
 
               <NumberField
-                label="Screen Time per Day (hours)"
-                name="screen_time"
-                value={form.screen_time}
-                onChange={handleChange}
-                min="0"
-                max="24"
-                step="0.5"
-                placeholder="e.g. 3"
-              />
+  label="Screen Time per Day (hours)"
+  name="screen_time"
+  value={form.screen_time}
+  onChange={handleChange}
+  min="1"
+  max="12"
+  step="0.5"
+  placeholder="e.g. 5"
+/>
 
               <NumberField
-                label="Internet Usage per Day (hours)"
-                name="internet_usage"
-                value={form.internet_usage}
-                onChange={handleChange}
-                min="0"
-                max="24"
-                step="0.5"
-                placeholder="e.g. 5"
-              />
+  label="Internet Usage per Day (hours)"
+  name="internet_usage"
+  value={form.internet_usage}
+  onChange={handleChange}
+  min="1"
+  max="14"
+  step="0.5"
+  placeholder="e.g. 5"
+/>
 
             </div>
 
             <ScaleField
-              label="How much financial stress are you experiencing?"
-              name="financial_stress"
-              value={form.financial_stress}
-              onChange={handleChange}
-              max={5}
-              low="Very low"
-              high="Very high"
-            />
+  label="How much financial stress are you experiencing?"
+  name="financial_stress"
+  value={form.financial_stress}
+  onChange={handleChange}
+  min={0}
+  max={10}
+  low="Very low"
+  high="Very high"
+/>
 
             <ScaleField
-              label="How much pressure do you feel from family expectations?"
-              name="family_expectation"
-              value={form.family_expectation}
-              onChange={handleChange}
-              max={5}
-              low="Very low"
-              high="Very high"
-            />
+  label="How much pressure do you feel from family expectations?"
+  name="family_expectation"
+  value={form.family_expectation}
+  onChange={handleChange}
+  min={0}
+  max={10}
+  low="Very low"
+  high="Very high"
+/>
 
           </CheckinSection>
 
@@ -555,6 +562,7 @@ function ScaleField({
   name,
   value,
   onChange,
+  min = 1,
   max,
   low,
   high
@@ -569,9 +577,9 @@ function ScaleField({
       <div className="scale-options">
 
         {Array.from(
-          { length: max },
+          { length: max - min + 1 },
           (_, index) => {
-            const number = index + 1
+            const number = index + min
 
             return (
               <label

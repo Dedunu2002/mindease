@@ -35,6 +35,9 @@ class User(UserMixin, db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
+
+
 # ── Routes ────────────────────────────────────────────────────
 
 @app.route('/')

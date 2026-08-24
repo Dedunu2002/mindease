@@ -127,7 +127,7 @@ const socialPercentage = Math.min(
 
       
 
-      <div className="student-dashboard">
+      
 
         {/* =========================================
             HEADER
@@ -141,8 +141,8 @@ const socialPercentage = Math.min(
             </div>
 
             <h1>
-              Good evening, Ann <span>🌷</span>
-            </h1>
+  Good evening, <span className="student-name">Ann</span> <span>🌷</span>
+</h1>
 
             <p>
               Here's a gentle look at your wellbeing today.
@@ -152,11 +152,12 @@ const socialPercentage = Math.min(
           <div className="dashboard-header-actions">
 
             <button
-              className="header-icon-button"
-              aria-label="Notifications"
-            >
-              ♡
-            </button>
+  className="header-icon-button"
+  aria-label="Notifications"
+>
+  ♡
+  <span className="notification-dot"></span>
+</button>
 
             <button
               className="profile-mini"
@@ -499,7 +500,6 @@ const socialPercentage = Math.min(
 
       </div>
 
-    </div>
   )
 }
 
