@@ -1,104 +1,1177 @@
-/* src/styles/Exercises.css */
+/* ============================================================
+   MINDEASE — WELLNESS EXERCISES
+   Student-friendly premium wellness interface
+============================================================ */
 
-.exercises-header    { margin-bottom:20px; }
-.exercises-header h1 { font-size:24px; font-weight:700; color:var(--dark); }
-.exercises-header p  { font-size:14px; color:var(--gray-500); margin-top:4px; }
 
-/* Tabs */
-.exercises-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
-.exercises-tab  {
-  padding:9px 18px; border-radius:20px; border:1.5px solid var(--gray-200);
-  background:white; font-size:13px; font-weight:500; color:var(--gray-700);
-  cursor:pointer; transition:all 0.15s;
+/* ============================================================
+   PAGE
+============================================================ */
+
+.page-wrapper {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+  box-sizing: border-box;
 }
-.exercises-tab:hover  { border-color:var(--teal); color:var(--teal); }
-.exercises-tab.active { background:var(--teal); border-color:var(--teal); color:white; }
 
-/* Exercise card */
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.exercises-header {
+  position: relative;
+
+  margin-bottom: 22px;
+  padding: 26px 30px;
+
+  overflow: hidden;
+
+  border: 1px solid #dce9df;
+  border-radius: 24px;
+
+  background:
+    radial-gradient(
+      circle at 90% -30%,
+      rgba(245, 214, 107, 0.34),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 0% 100%,
+      rgba(220, 242, 225, 0.55),
+      transparent 38%
+    ),
+    linear-gradient(
+      120deg,
+      #f0f8f1,
+      #ffffff 58%,
+      #fffdf4
+    );
+
+  box-shadow:
+    0 10px 28px rgba(48, 76, 57, 0.055);
+}
+
+
+.exercises-header::after {
+  content: "";
+
+  position: absolute;
+
+  width: 150px;
+  height: 150px;
+
+  right: -60px;
+  top: -80px;
+
+  border: 1px solid rgba(245, 214, 107, 0.22);
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 18px rgba(245, 214, 107, 0.05),
+    0 0 0 38px rgba(245, 214, 107, 0.025);
+}
+
+
+.exercises-header h1 {
+  position: relative;
+
+  z-index: 1;
+
+  margin: 0;
+
+  color: #294434;
+
+  font-size: 28px;
+
+  font-weight: 780;
+
+  line-height: 1.2;
+
+  letter-spacing: -0.6px;
+}
+
+
+.exercises-header p {
+  position: relative;
+
+  z-index: 1;
+
+  max-width: 680px;
+
+  margin: 8px 0 0;
+
+  color: #718078;
+
+  font-size: 14px;
+
+  line-height: 1.65;
+}
+
+
+/* ============================================================
+   TABS
+============================================================ */
+
+.exercises-tabs {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+
+.exercises-tab {
+  min-height: 52px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 11px 15px;
+
+  border: 1px solid #dce7df;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  color: #607367;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 680;
+
+  line-height: 1.35;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 3px 10px rgba(52, 78, 59, 0.025);
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+
+.exercises-tab:hover {
+  transform: translateY(-2px);
+
+  border-color: #a9c7af;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f5faf5,
+      #fffdf3
+    );
+
+  color: #4d6f56;
+
+  box-shadow:
+    0 7px 16px rgba(52, 78, 59, 0.065);
+}
+
+
+.exercises-tab.active {
+  border-color: #5f8969;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6f9977,
+      #5c8564
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 18px rgba(76, 112, 83, 0.17);
+}
+
+
+/* ============================================================
+   MAIN EXERCISE CARD
+============================================================ */
+
 .exercise-card {
-  background:white; border-radius:var(--radius-lg);
-  border:1px solid var(--gray-200); padding:28px;
-  box-shadow:var(--shadow-sm); max-width:600px;
-}
-.exercise-card-header    { margin-bottom:24px; }
-.exercise-card-header h2 { font-size:20px; font-weight:700; color:var(--dark); margin-bottom:6px; }
-.exercise-card-header p  { font-size:14px; color:var(--gray-500); line-height:1.6; }
+  width: 100%;
 
-/* ── Box Breathing ─────────────────────────────────────── */
+  max-width: 900px;
+
+  margin: 0 auto;
+
+  box-sizing: border-box;
+
+  padding: 30px;
+
+  border: 1px solid #dfe9e1;
+
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 36px rgba(48, 75, 57, 0.065);
+}
+
+
+/* ============================================================
+   CARD HEADER
+============================================================ */
+
+.exercise-card-header {
+  margin-bottom: 26px;
+
+  padding-bottom: 20px;
+
+  border-bottom:
+    1px solid #edf1ed;
+}
+
+
+.exercise-card-header h2 {
+  margin: 0 0 8px;
+
+  color: #294434;
+
+  font-size: 22px;
+
+  font-weight: 760;
+
+  line-height: 1.3;
+
+  letter-spacing: -0.3px;
+}
+
+
+.exercise-card-header p {
+  max-width: 720px;
+
+  margin: 0;
+
+  color: #77847b;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+
+
+/* ============================================================
+   BUTTON SYSTEM
+============================================================ */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  min-height: 44px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 10px 18px;
+
+  border-radius: 12px;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 720;
+
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+
+/* Primary */
+
+.btn-primary {
+  border: 1px solid #648d6d;
+
+  background:
+    linear-gradient(
+      145deg,
+      #78a17f,
+      #5c8464
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 7px 16px rgba(77, 113, 83, 0.16);
+}
+
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+
+  background:
+    linear-gradient(
+      145deg,
+      #6c9673,
+      #52785b
+    );
+
+  box-shadow:
+    0 10px 20px rgba(77, 113, 83, 0.21);
+}
+
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+
+.btn-primary:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
+}
+
+
+/* Secondary */
+
+.btn-secondary {
+  border: 1px solid #d6e3d8;
+
+  background: #ffffff;
+
+  color: #5e7563;
+}
+
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
+
+  border-color: #b6cdbb;
+
+  background: #f5faf5;
+
+  box-shadow:
+    0 6px 14px rgba(57, 84, 63, 0.07);
+}
+
+
+/* Danger */
+
+.btn-danger {
+  border: 1px solid #e3b6ac;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fff3ef,
+      #fae6e1
+    );
+
+  color: #9a4b3c;
+}
+
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+
+  background: #f8ddd7;
+
+  box-shadow:
+    0 7px 15px rgba(130, 72, 58, 0.09);
+}
+
+
+/* ============================================================
+   BOX BREATHING
+============================================================ */
+
 .breathing-area {
-  display:flex; flex-direction:column; align-items:center; gap:16px; margin-bottom:20px;
+  min-height: 330px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 18px;
+
+  margin-bottom: 22px;
+
+  padding: 18px;
+
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(226, 243, 230, 0.55),
+      transparent 65%
+    );
 }
+
+
 .breath-box {
-  width:200px; height:200px; border:4px solid var(--teal);
-  border-radius:var(--radius-lg); display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:8px;
-  transition:border-color 0.8s, transform 0.8s;
+  width: 220px;
+  height: 220px;
+
+  box-sizing: border-box;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  border: 4px solid #5e9671;
+
+  border-radius: 28px;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,255,255,0.95),
+      rgba(236,247,238,0.78)
+    );
+
+  box-shadow:
+    0 15px 35px rgba(75, 113, 83, 0.09),
+    inset 0 0 30px rgba(116, 160, 124, 0.08);
+
+  transition:
+    border-color 0.8s,
+    transform 0.8s ease,
+    box-shadow 0.8s ease;
 }
-/* Animate the box size per phase */
-.breath-box.phase-0 { transform:scale(1.12); }  /* Inhale — expand */
-.breath-box.phase-1 { transform:scale(1.12); }  /* Hold   — stay */
-.breath-box.phase-2 { transform:scale(0.90); }  /* Exhale — shrink */
-.breath-box.phase-3 { transform:scale(0.90); }  /* Hold   — stay */
 
-.breath-phase-label  { font-size:18px; font-weight:700; margin:0; }
-.breath-countdown    { font-size:48px; font-weight:700; color:var(--dark); line-height:1; margin:0; }
-.breath-instruction  { font-size:13px; color:var(--gray-500); margin:0; text-align:center; }
-.breath-start-hint   { font-size:16px; color:var(--gray-500); margin:0; }
-.cycle-count         { font-size:13px; color:var(--teal); font-weight:500; }
-.exercise-actions    { display:flex; gap:10px; }
 
-/* ── Grounding ─────────────────────────────────────────── */
-.grounding-dots { display:flex; gap:8px; margin-bottom:20px; }
-.grounding-dot  {
-  width:36px; height:36px; border-radius:50%;
-  border:2px solid var(--gray-200); background:white;
-  font-size:14px; font-weight:700; color:var(--gray-500);
-  cursor:pointer; transition:all 0.15s;
+.breath-box.phase-0,
+.breath-box.phase-1 {
+  transform: scale(1.08);
+
+  box-shadow:
+    0 20px 42px rgba(75, 113, 83, 0.14);
 }
-.grounding-dot.active { background:var(--teal); border-color:var(--teal); color:white; }
-.grounding-dot.done   { background:var(--teal-light); border-color:var(--teal); color:var(--teal); }
 
-.grounding-step-card   { text-align:center; }
-.grounding-sense-icon  { font-size:52px; display:block; margin-bottom:12px; }
-.grounding-step-card h3{ font-size:20px; color:var(--dark); margin-bottom:10px; }
-.grounding-prompt      { font-size:15px; color:var(--gray-700); margin-bottom:8px; }
-.grounding-examples    { font-size:13px; color:var(--gray-500); margin-bottom:20px; }
-.grounding-nav         { display:flex; gap:10px; justify-content:center; }
 
-.grounding-complete { text-align:center; padding:24px 0; }
-.grounding-complete span { font-size:48px; display:block; margin-bottom:12px; }
-.grounding-complete h3   { font-size:20px; color:var(--dark); margin-bottom:8px; }
-.grounding-complete p    { font-size:14px; color:var(--gray-500); margin-bottom:16px; }
+.breath-box.phase-2,
+.breath-box.phase-3 {
+  transform: scale(0.92);
 
-/* ── Progressive Muscle Relaxation ────────────────────── */
-.pmr-start   { text-align:center; padding:16px 0; }
-.pmr-start p { font-size:14px; color:var(--gray-700); margin-bottom:20px; line-height:1.6; }
+  box-shadow:
+    0 9px 25px rgba(75, 113, 83, 0.07);
+}
 
-.pmr-progress { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+
+.breath-phase-label {
+  margin: 0;
+
+  font-size: 19px;
+
+  font-weight: 760;
+}
+
+
+.breath-countdown {
+  margin: 0;
+
+  color: #294434;
+
+  font-size: 52px;
+
+  font-weight: 780;
+
+  line-height: 1;
+}
+
+
+.breath-instruction {
+  max-width: 180px;
+
+  margin: 0;
+
+  color: #78857c;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+
+  text-align: center;
+}
+
+
+.breath-start-hint {
+  margin: 0;
+
+  color: #839088;
+
+  font-size: 15px;
+
+  font-weight: 650;
+}
+
+
+.cycle-count {
+  margin: 0;
+
+  color: #5f8969;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+.exercise-actions {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 10px;
+}
+
+
+/* ============================================================
+   GROUNDING
+============================================================ */
+
+.grounding-dots {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 9px;
+
+  margin-bottom: 25px;
+}
+
+
+.grounding-dot {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 2px solid #dce6de;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  color: #7a877f;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+
+.grounding-dot:hover {
+  transform: translateY(-2px);
+
+  border-color: #9fbea6;
+
+  color: #5f8167;
+}
+
+
+.grounding-dot.active {
+  transform: scale(1.08);
+
+  border-color: #5f8969;
+
+  background: #5f8969;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 7px 15px rgba(77, 113, 83, 0.17);
+}
+
+
+.grounding-dot.done {
+  border-color: #a7c8ae;
+
+  background: #eaf5eb;
+
+  color: #5b8063;
+}
+
+
+.grounding-step-card {
+  max-width: 650px;
+
+  margin: 0 auto;
+
+  padding: 30px 25px;
+
+  border: 1px solid #e0e9e1;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fbfdfb,
+      #f7fbf7
+    );
+
+  text-align: center;
+}
+
+
+.grounding-sense-icon {
+  display: block;
+
+  margin-bottom: 15px;
+
+  font-size: 52px;
+}
+
+
+.grounding-step-card h3 {
+  margin: 0 0 10px;
+
+  color: #294434;
+
+  font-size: 21px;
+
+  font-weight: 760;
+}
+
+
+.grounding-prompt {
+  margin: 0 0 9px;
+
+  color: #52645a;
+
+  font-size: 15px;
+
+  font-weight: 600;
+
+  line-height: 1.6;
+}
+
+
+.grounding-examples {
+  margin: 0 0 22px;
+
+  color: #859087;
+
+  font-size: 13px;
+
+  line-height: 1.65;
+}
+
+
+.grounding-nav {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+
+.grounding-complete {
+  max-width: 600px;
+
+  margin: 0 auto;
+
+  padding: 38px 25px;
+
+  border: 1px solid #dce9df;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f2faf3,
+      #fffdf3
+    );
+
+  text-align: center;
+}
+
+
+.grounding-complete span {
+  display: block;
+
+  margin-bottom: 14px;
+
+  font-size: 48px;
+}
+
+
+.grounding-complete h3 {
+  margin: 0 0 9px;
+
+  color: #35523d;
+
+  font-size: 21px;
+}
+
+
+.grounding-complete p {
+  margin: 0 auto 20px;
+
+  max-width: 500px;
+
+  color: #78857c;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+
+
+/* ============================================================
+   PROGRESSIVE MUSCLE RELAXATION
+============================================================ */
+
+.pmr-start {
+  max-width: 650px;
+
+  margin: 0 auto;
+
+  padding: 30px 25px;
+
+  border: 1px solid #e0e9e1;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fbfdfb,
+      #f7fbf7
+    );
+
+  text-align: center;
+}
+
+
+.pmr-start p {
+  margin: 0 0 22px;
+
+  color: #65736a;
+
+  font-size: 14px;
+
+  line-height: 1.75;
+}
+
+
+.pmr-progress {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-bottom: 24px;
+
+  flex-wrap: wrap;
+}
+
+
 .pmr-dot {
-  width:12px; height:12px; border-radius:50%;
-  background:var(--gray-200); transition:all 0.3s;
+  width: 13px;
+  height: 13px;
+
+  border-radius: 50%;
+
+  background: #dce6de;
+
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease;
 }
-.pmr-dot.active { background:var(--teal); transform:scale(1.3); }
-.pmr-dot.done   { background:var(--mint); }
 
-.pmr-muscle-card { text-align:center; }
-.pmr-icon        { font-size:48px; display:block; margin-bottom:10px; }
-.pmr-muscle-card h3 { font-size:20px; color:var(--dark); margin-bottom:8px; }
-.pmr-action      { font-size:15px; color:var(--gray-700); margin-bottom:20px; }
 
-.pmr-hold  { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.pmr-dot.active {
+  transform: scale(1.45);
+
+  background: #5f8969;
+
+  box-shadow:
+    0 0 0 5px rgba(95, 137, 105, 0.10);
+}
+
+
+.pmr-dot.done {
+  background: #9bc2a2;
+}
+
+
+.pmr-muscle-card {
+  max-width: 650px;
+
+  margin: 0 auto;
+
+  padding: 30px 25px;
+
+  border: 1px solid #e0e9e1;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fbfdfb,
+      #f7fbf7
+    );
+
+  text-align: center;
+}
+
+
+.pmr-icon {
+  display: block;
+
+  margin-bottom: 13px;
+
+  font-size: 48px;
+}
+
+
+.pmr-muscle-card h3 {
+  margin: 0 0 9px;
+
+  color: #294434;
+
+  font-size: 21px;
+
+  font-weight: 760;
+}
+
+
+.pmr-action {
+  max-width: 480px;
+
+  margin: 0 auto 22px;
+
+  color: #65736a;
+
+  font-size: 15px;
+
+  line-height: 1.65;
+}
+
+
+.pmr-hold {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 9px;
+}
+
+
 .pmr-timer {
-  width:64px; height:64px; border-radius:50%;
-  background:var(--teal); color:white;
-  font-size:28px; font-weight:700;
-  display:flex; align-items:center; justify-content:center;
-}
-.pmr-hold p { font-size:14px; color:var(--gray-500); }
+  width: 78px;
+  height: 78px;
 
-.pmr-release    { margin-top:16px; }
-.pmr-release p  { font-size:15px; color:var(--teal-dark); margin-bottom:14px; }
-.pmr-complete   { text-align:center; padding:24px 0; }
-.pmr-complete span { font-size:48px; display:block; margin-bottom:12px; }
-.pmr-complete h3   { font-size:20px; color:var(--dark); margin-bottom:8px; }
-.pmr-complete p    { font-size:14px; color:var(--gray-500); margin-bottom:16px; }
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 5px solid #dbe9de;
+
+  border-top-color: #5f8969;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  color: #4e7357;
+
+  font-size: 29px;
+
+  font-weight: 780;
+
+  box-shadow:
+    0 8px 20px rgba(63, 99, 70, 0.09);
+}
+
+
+.pmr-hold p {
+  margin: 0;
+
+  color: #7b887f;
+
+  font-size: 14px;
+}
+
+
+.pmr-release {
+  margin-top: 18px;
+
+  padding-top: 18px;
+
+  border-top: 1px solid #e4ece5;
+}
+
+
+.pmr-release p {
+  margin: 0 0 15px;
+
+  color: #5d8064;
+
+  font-size: 14px;
+
+  font-weight: 650;
+}
+
+
+.pmr-complete {
+  max-width: 600px;
+
+  margin: 0 auto;
+
+  padding: 38px 25px;
+
+  border: 1px solid #dce9df;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f2faf3,
+      #fffdf3
+    );
+
+  text-align: center;
+}
+
+
+.pmr-complete span {
+  display: block;
+
+  margin-bottom: 14px;
+
+  font-size: 48px;
+}
+
+
+.pmr-complete h3 {
+  margin: 0 0 9px;
+
+  color: #35523d;
+
+  font-size: 21px;
+}
+
+
+.pmr-complete p {
+  max-width: 500px;
+
+  margin: 0 auto 20px;
+
+  color: #78857c;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 800px) {
+
+  .page-wrapper {
+    padding:
+      4px 0 30px;
+  }
+
+
+  .exercises-header {
+    padding:
+      23px 21px;
+
+    border-radius:
+      20px;
+  }
+
+
+  .exercises-header h1 {
+    font-size:
+      24px;
+  }
+
+
+  .exercises-tabs {
+    grid-template-columns:
+      1fr;
+
+    gap:
+      8px;
+  }
+
+
+  .exercise-card {
+    padding:
+      22px 18px;
+
+    border-radius:
+      20px;
+  }
+
+
+  .breath-box {
+    width:
+      190px;
+
+    height:
+      190px;
+  }
+
+}
+
+
+@media (max-width: 520px) {
+
+  .exercises-header h1 {
+    font-size:
+      22px;
+  }
+
+
+  .exercises-header p {
+    font-size:
+      13px;
+  }
+
+
+  .exercise-card-header h2 {
+    font-size:
+      19px;
+  }
+
+
+  .exercise-card-header p {
+    font-size:
+      13px;
+  }
+
+
+  .breathing-area {
+    min-height:
+      280px;
+  }
+
+
+  .breath-box {
+    width:
+      175px;
+
+    height:
+      175px;
+
+    border-radius:
+      23px;
+  }
+
+
+  .breath-countdown {
+    font-size:
+      44px;
+  }
+
+
+  .grounding-step-card,
+  .pmr-start,
+  .pmr-muscle-card {
+    padding:
+      24px 17px;
+  }
+
+
+  .grounding-step-card h3,
+  .pmr-muscle-card h3 {
+    font-size:
+      19px;
+  }
+
+
+  .grounding-nav {
+    width:
+      100%;
+  }
+
+
+  .grounding-nav .btn-primary,
+  .grounding-nav .btn-secondary {
+    flex:
+      1;
+  }
+
+
+  .exercise-actions .btn-primary,
+  .exercise-actions .btn-danger {
+    width:
+      100%;
+  }
+
+}
