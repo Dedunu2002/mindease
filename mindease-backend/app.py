@@ -4856,6 +4856,251 @@ def me():
     }), 200
 
  # ════════════════════════════════════════════════════════════
+
+# ============================================================
+# STUDENT PROFILE
+# ============================================================
+
+@app.route('/api/profile', methods=['GET'])
+@login_required
+def get_profile():
+
+    user_id = session.get('user_id')
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({
+            'success': False,
+            'error': 'User not found'
+        }), 404
+
+    return jsonify({
+        'success': True,
+
+        'profile': {
+            'id': user.id,
+
+            'name': user.name,
+
+            'email': user.email,
+
+            'role': user.role,
+
+            'is_approved': user.is_approved,
+
+            'created_at': (
+                user.created_at.isoformat()
+                if user.created_at
+                else None
+            )
+        }
+
+    }), 200
+
+
+# ============================================================
+# UPDATE STUDENT PROFILE
+# ============================================================
+
+@app.route('/api/profile', methods=['PUT'])
+@login_required
+def update_profile():
+
+    try:
+
+        # ------------------------------------------------------
+        # GET LOGGED-IN USER
+        # ------------------------------------------------------
+
+        user_id = session.get('user_id')
+
+        user = User.query.get(user_id)
+
+
+        if not user:
+
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+
+
+        # ------------------------------------------------------
+        # GET REQUEST DATA
+        # ------------------------------------------------------
+
+        data = request.get_json() or {}
+
+
+        name = str(
+            data.get('name', '')
+        ).strip()
+
+
+        email = str(
+            data.get('email', '')
+        ).strip().lower()
+
+
+        # ------------------------------------------------------
+        # VALIDATION
+        # ------------------------------------------------------
+
+        if not name:
+
+            return jsonify({
+                'success': False,
+                'error': 'Name is required'
+            }), 400
+
+
+        if not email:
+
+            return jsonify({
+                'success': False,
+                'error': 'Email is required'
+            }), 400
+
+
+        if len(name) > 100:
+
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Name must be 100 characters or less'
+                )
+            }), 400
+
+
+        if len(email) > 150:
+
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Email must be 150 characters or less'
+                )
+            }), 400
+
+
+        # ------------------------------------------------------
+        # BASIC EMAIL VALIDATION
+        # ------------------------------------------------------
+
+        email_pattern = (
+            r'^[A-Za-z0-9._%+-]+'
+            r'@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+        )
+
+
+        if not re.match(email_pattern, email):
+
+            return jsonify({
+                'success': False,
+                'error': 'Please enter a valid email address'
+            }), 400
+
+
+        # ------------------------------------------------------
+        # CHECK EMAIL ALREADY EXISTS
+        # ------------------------------------------------------
+
+        existing_user = User.query.filter(
+            User.email == email,
+            User.id != user.id
+        ).first()
+
+
+        if existing_user:
+
+            return jsonify({
+                'success': False,
+                'error': (
+                    'This email is already being used'
+                )
+            }), 409
+
+
+        # ------------------------------------------------------
+        # UPDATE USER
+        # ------------------------------------------------------
+
+        user.name = name
+
+        user.email = email
+
+
+        db.session.commit()
+
+
+        # ------------------------------------------------------
+        # UPDATE FLASK SESSION
+        # ------------------------------------------------------
+
+        session['user_name'] = user.name
+
+
+        # ------------------------------------------------------
+        # RESPONSE
+        # ------------------------------------------------------
+
+        return jsonify({
+
+            'success': True,
+
+            'message': (
+                'Profile updated successfully'
+            ),
+
+            'profile': {
+
+                'id': user.id,
+
+                'name': user.name,
+
+                'email': user.email,
+
+                'role': user.role,
+
+                'is_approved': user.is_approved,
+
+                'created_at': (
+                    user.created_at.isoformat()
+                    if user.created_at
+                    else None
+                )
+
+            }
+
+        }), 200
+
+
+    except Exception as e:
+
+        # ------------------------------------------------------
+        # DATABASE ROLLBACK
+        # ------------------------------------------------------
+
+        db.session.rollback()
+
+
+        print(
+            '❌ Profile update error:',
+            e
+        )
+
+
+        return jsonify({
+
+            'success': False,
+
+            'error': (
+                'Failed to update profile'
+            ),
+
+            'details': str(e)
+
+        }), 500
 # ADMIN — USER MANAGEMENT
 # ════════════════════════════════════════════════════════════
 

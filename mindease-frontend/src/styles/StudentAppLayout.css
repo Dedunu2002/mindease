@@ -1,10 +1,12 @@
 /* ============================================================
-   STUDENT APP LAYOUT
+   STUDENT APP LAYOUT — MindEase
+   Clean sidebar/content separation
 ============================================================ */
 
 .student-app-layout {
   min-height: 100vh;
   width: 100%;
+
   background: #fafcfb;
 }
 
@@ -15,9 +17,55 @@
 
 .student-app-content {
   min-height: 100vh;
+
+  /*
+    Sidebar = 250px
+
+    The content itself starts 250px from the left,
+    then receives 24px left padding.
+
+    This creates a clean visual gap between:
+    SIDEBAR → CONTENT
+  */
+
   margin-left: 250px;
+
   width: calc(100% - 250px);
+
   box-sizing: border-box;
+
+  /*
+    Top    Right   Bottom   Left
+  */
+
+  padding:
+    28px
+    28px
+    60px
+    24px;
+
+  /*
+    Prevent horizontal overflow when pages
+    contain wide cards/tables.
+  */
+
+  overflow-x: hidden;
+}
+
+
+/* ============================================================
+   CONTENT INNER FEEL
+============================================================ */
+
+/*
+   Every student page now gets a breathing space around it.
+
+   The background remains continuous while individual
+   page cards can sit comfortably inside the content area.
+*/
+
+.student-app-content > * {
+  max-width: 100%;
 }
 
 
@@ -26,20 +74,59 @@
 ============================================================ */
 
 @media (max-width: 900px) {
+
   .student-app-content {
     margin-left: 220px;
+
     width: calc(100% - 220px);
+
+    padding:
+      26px
+      24px
+      55px
+      22px;
   }
+
 }
 
 
 /* ============================================================
-   MOBILE
+   MOBILE / COLLAPSED SIDEBAR
 ============================================================ */
 
 @media (max-width: 768px) {
+
   .student-app-content {
     margin-left: 72px;
+
     width: calc(100% - 72px);
+
+    padding:
+      22px
+      18px
+      50px
+      18px;
   }
+
+}
+
+
+/* ============================================================
+   SMALL MOBILE
+============================================================ */
+
+@media (max-width: 480px) {
+
+  .student-app-content {
+    margin-left: 64px;
+
+    width: calc(100% - 64px);
+
+    padding:
+      18px
+      14px
+      45px
+      14px;
+  }
+
 }

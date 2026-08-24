@@ -1,38 +1,63 @@
 // src/App.jsx
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate
+} from 'react-router-dom'
+
 import { useAuth } from './context/AuthContext'
 
 import StudentSidebar from './components/StudentSidebar'
 import SOSButton from './components/SOSButton'
+
 import './styles/StudentAppLayout.css'
 
-// Pages
-import Login               from './pages/Login'
-import Register            from './pages/Register'
-import StudentDashboard    from './pages/StudentDashboard'
+// ============================================================
+// PUBLIC PAGES
+// ============================================================
+
+import Login from './pages/Login'
+import Register from './pages/Register'
+
+// ============================================================
+// STUDENT PAGES
+// ============================================================
+
+import StudentDashboard from './pages/StudentDashboard'
+import CheckIn from './pages/CheckIn'
+import Journal from './pages/Journal'
+import Chat from './pages/Chat'
+import Booking from './pages/Booking'
+import Resources from './pages/Resources'
+import Community from './pages/Community'
+import Exercises from './pages/Exercises'
+import Goals from './pages/Goals'
+import WeeklySentiment from './pages/WeeklySentiment'
+
+// Profile
+import Profile from './pages/Profile'
+import EditProfile from './pages/EditProfile'
+
+// ============================================================
+// COUNSELLOR PAGES
+// ============================================================
+
 import CounsellorDashboard from './pages/CounsellorDashboard'
-import AdminDashboard      from './pages/AdminDashboard'
-import AdminUsers from './pages/admin/AdminUsers'
-import AdminCounsellors from './pages/admin/AdminCounsellors'
-import AdminAnalytics from './pages/admin/AdminAnalytics'
-import AdminSettings from './pages/admin/AdminSettings' 
-
-import CheckIn             from './pages/CheckIn'
-import Journal             from './pages/Journal'
-import Chat                from './pages/Chat'
-import Booking             from './pages/Booking'
-import Resources           from './pages/Resources'
-import Community           from './pages/Community'
-import Exercises           from './pages/Exercises'
-import Goals               from './pages/Goals'
-import WeeklySentiment     from './pages/WeeklySentiment'
-
-import CounsellorAppointments
-  from './pages/CounsellorAppointments'
+import CounsellorAppointments from './pages/CounsellorAppointments'
 import CounsellorStudents from './pages/CounsellorStudents'
 import CounsellorReports from './pages/CounsellorReports'
 
+// ============================================================
+// ADMIN PAGES
+// ============================================================
+
+import AdminDashboard from './pages/AdminDashboard'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminCounsellors from './pages/admin/AdminCounsellors'
+import AdminAnalytics from './pages/admin/AdminAnalytics'
+import AdminSettings from './pages/admin/AdminSettings'
 
 
 // ============================================================
@@ -43,10 +68,17 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   const { currentUser } = useAuth()
 
+  // Not logged in
   if (!currentUser) {
-    return <Navigate to="/login" replace />
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    )
   }
 
+  // Logged in but wrong role
   if (
     allowedRoles &&
     !allowedRoles.includes(currentUser.role)
@@ -71,10 +103,17 @@ function SmartRedirect() {
 
   const { currentUser } = useAuth()
 
+  // No user
   if (!currentUser) {
-    return <Navigate to="/login" replace />
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    )
   }
 
+  // Send user to correct dashboard
   return (
     <Navigate
       to={`/${currentUser.role}-dashboard`}
@@ -146,7 +185,9 @@ export default function App() {
         <Route
           path="/student-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <StudentDashboard />
               </StudentWrapper>
@@ -154,10 +195,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/checkin"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <CheckIn />
               </StudentWrapper>
@@ -165,10 +209,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/journal"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Journal />
               </StudentWrapper>
@@ -176,10 +223,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/chat"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Chat />
               </StudentWrapper>
@@ -187,10 +237,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/booking"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Booking />
               </StudentWrapper>
@@ -198,10 +251,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/resources"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Resources />
               </StudentWrapper>
@@ -209,10 +265,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/community"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Community />
               </StudentWrapper>
@@ -220,10 +279,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/exercises"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Exercises />
               </StudentWrapper>
@@ -231,10 +293,13 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/goals"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <Goals />
               </StudentWrapper>
@@ -242,12 +307,47 @@ export default function App() {
           }
         />
 
+
         <Route
           path="/weekly-sentiment"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
               <StudentWrapper>
                 <WeeklySentiment />
+              </StudentWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* ==================================================
+            PROFILE
+        ================================================== */}
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
+              <StudentWrapper>
+                <Profile />
+              </StudentWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute
+              allowedRoles={['student']}
+            >
+              <StudentWrapper>
+                <EditProfile />
               </StudentWrapper>
             </ProtectedRoute>
           }
@@ -261,36 +361,49 @@ export default function App() {
         <Route
           path="/counsellor-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['counsellor']}>
+            <ProtectedRoute
+              allowedRoles={['counsellor']}
+            >
               <CounsellorDashboard />
             </ProtectedRoute>
           }
         />
-        <Route
-  path="/counsellor-appointments"
-  element={
-    <ProtectedRoute allowedRoles={['counsellor']}>
-      <CounsellorAppointments />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/counsellor-students"
-  element={
-    <ProtectedRoute allowedRoles={['counsellor']}>
-      <CounsellorStudents />
-    </ProtectedRoute>
-  }
-/>
 
-<Route
-  path="/counsellor-reports"
-  element={
-    <ProtectedRoute allowedRoles={['counsellor']}>
-      <CounsellorReports />
-    </ProtectedRoute>
-  }
-/>
+
+        <Route
+          path="/counsellor-appointments"
+          element={
+            <ProtectedRoute
+              allowedRoles={['counsellor']}
+            >
+              <CounsellorAppointments />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/counsellor-students"
+          element={
+            <ProtectedRoute
+              allowedRoles={['counsellor']}
+            >
+              <CounsellorStudents />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/counsellor-reports"
+          element={
+            <ProtectedRoute
+              allowedRoles={['counsellor']}
+            >
+              <CounsellorReports />
+            </ProtectedRoute>
+          }
+        />
 
 
         {/* ==================================================
@@ -300,46 +413,61 @@ export default function App() {
         <Route
           path="/admin-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
               <AdminDashboard />
             </ProtectedRoute>
           }
         />
+
+
         <Route
-  path="/admin/users"
-  element={
-    <ProtectedRoute allowedRoles={['admin']}>
-      <AdminUsers />
-    </ProtectedRoute>
-  }
-/>
+          path="/admin/users"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
 
-<Route
-  path="/admin/counsellors"
-  element={
-    <ProtectedRoute allowedRoles={['admin']}>
-      <AdminCounsellors />
-    </ProtectedRoute>
-  }
-/>
 
-<Route
-  path="/admin/analytics"
-  element={
-    <ProtectedRoute allowedRoles={['admin']}>
-      <AdminAnalytics />
-    </ProtectedRoute>
-  }
-/>
+        <Route
+          path="/admin/counsellors"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
+              <AdminCounsellors />
+            </ProtectedRoute>
+          }
+        />
 
-<Route
-  path="/admin/settings"
-  element={
-    <ProtectedRoute allowedRoles={['admin']}>
-      <AdminSettings />
-    </ProtectedRoute>
-  }
-/>
+
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
+              <AdminAnalytics />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/admin/settings"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
+              <AdminSettings />
+            </ProtectedRoute>
+          }
+        />
 
 
         {/* ==================================================
@@ -348,7 +476,12 @@ export default function App() {
 
         <Route
           path="*"
-          element={<Navigate to="/" replace />}
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
         />
 
       </Routes>

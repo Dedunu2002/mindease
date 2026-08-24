@@ -1,339 +1,854 @@
-/* ============================================================
-   STUDENT SIDEBAR
-============================================================ */
+/* ================================================================
+   STUDENT SIDEBAR — MindEase
+
+   Design system:
+   Sage green + warm yellow + soft cream
+
+   Primary:
+   #6F9F7D
+
+   Warm yellow:
+   #F5D66B
+
+   Soft yellow:
+   #FFF4C7
+
+   Cream:
+   #FFFDF4
+================================================================ */
+
+
+/* ================================================================
+   SIDEBAR
+================================================================ */
 
 .student-sidebar {
+
+  /* --------------------------------------------------------------
+     COLOR SYSTEM
+  -------------------------------------------------------------- */
+
+  --sidebar-ink: #30463a;
+
+  --sidebar-text: #64736a;
+
+  --sidebar-muted: #97a39c;
+
+  --sidebar-line: #e5ece7;
+
+  --sidebar-line-soft: #edf2ee;
+
+  --sidebar-green: #6f9f7d;
+
+  --sidebar-green-dark: #4f735c;
+
+  --sidebar-green-soft: #e5f3e8;
+
+  /* NEW — warm yellow palette */
+
+  --sidebar-yellow: #f5d66b;
+
+  --sidebar-yellow-dark: #b99432;
+
+  --sidebar-yellow-soft: #fff4c7;
+
+  --sidebar-yellow-pale: #fffaf0;
+
+  --sidebar-cream: #fffdf5;
+
+
+  /* --------------------------------------------------------------
+     POSITION
+  -------------------------------------------------------------- */
+
   position: fixed;
 
   top: 0;
   left: 0;
 
   width: 250px;
+
   height: 100vh;
 
+
+  /* --------------------------------------------------------------
+     STRUCTURE
+  -------------------------------------------------------------- */
+
   display: flex;
+
   flex-direction: column;
 
-  padding: 20px 14px;
 
-  background: rgba(255, 255, 255, 0.96);
+  padding:
+    18px
+    13px;
 
-  border-right:
-    1px solid var(--student-border);
 
-  box-shadow:
-    4px 0 22px rgba(55, 78, 64, 0.035);
+  box-sizing: border-box;
+
 
   z-index: 1000;
 
-  box-sizing: border-box;
+
+  /* --------------------------------------------------------------
+     BACKGROUND
+  -------------------------------------------------------------- */
+
+  background:
+
+    /*
+      Warm yellow glow near top
+    */
+
+    radial-gradient(
+      circle at 88% 8%,
+      rgba(255, 243, 199, 0.75),
+      transparent 24%
+    ),
+
+    /*
+      Soft green glow
+    */
+
+    radial-gradient(
+      circle at 18% 0%,
+      rgba(223, 243, 228, 0.72),
+      transparent 26%
+    ),
+
+    /*
+      Main background
+    */
+
+    linear-gradient(
+      180deg,
+      #fffefa 0%,
+      #fbfdfb 48%,
+      #f9fcfa 100%
+    );
+
+
+  border-right:
+    1px solid
+    var(--sidebar-line);
+
+
+  box-shadow:
+    5px 0 25px
+    rgba(55, 78, 64, 0.045);
 }
 
 
-/* ============================================================
+/* ================================================================
+   SUBTLE INNER EDGE
+================================================================ */
+
+.student-sidebar::after {
+
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  right: 0;
+
+  width: 1px;
+  height: 100%;
+
+
+  background:
+
+    linear-gradient(
+      180deg,
+
+      rgba(111, 159, 125, 0.18),
+
+      rgba(245, 214, 107, 0.16) 20%,
+
+      transparent 38%,
+
+      transparent 70%,
+
+      rgba(111, 159, 125, 0.08)
+    );
+
+
+  pointer-events: none;
+}
+
+
+/* ================================================================
    BRAND
-============================================================ */
+================================================================ */
 
 .student-brand {
+
   display: flex;
+
   align-items: center;
 
   gap: 11px;
 
+
   padding:
     4px
     9px
-    20px;
+    19px;
+
 
   border-bottom:
-    1px solid var(--student-border-soft);
+    1px solid
+    var(--sidebar-line-soft);
 }
 
 
+/* ================================================================
+   BRAND ICON
+================================================================ */
+
 .student-brand-icon {
+
+  position: relative;
+
+
   width: 44px;
   height: 44px;
 
-  flex-shrink: 0;
+
+  flex: 0 0 44px;
+
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
-  background:
-    linear-gradient(
-      135deg,
-      #DFF3E4,
-      #E8F4EC
-    );
+
+  border:
+    1px solid
+    rgba(111, 159, 125, 0.13);
+
 
   border-radius: 14px;
 
-  font-size: 21px;
+
+  /*
+    Green + warm yellow brand treatment
+  */
+
+  background:
+
+    linear-gradient(
+      135deg,
+
+      #dff3e4 0%,
+
+      #eef8f1 58%,
+
+      #fff4c7 100%
+    );
+
 
   box-shadow:
-    0 4px 12px rgba(85, 130, 96, 0.08);
+    0 6px 15px
+    rgba(85, 130, 96, 0.10);
+
+
+  font-size: 21px;
 }
 
 
+/* Small yellow status dot */
+
+.student-brand-icon::after {
+
+  content: "";
+
+  position: absolute;
+
+
+  right: -3px;
+  bottom: -3px;
+
+
+  width: 11px;
+  height: 11px;
+
+
+  border:
+    2px solid
+    #fffefa;
+
+
+  border-radius: 50%;
+
+
+  background:
+    var(--sidebar-yellow);
+
+
+  box-shadow:
+    0 2px 5px
+    rgba(185, 148, 50, 0.18);
+}
+
+
+/* ================================================================
+   BRAND TEXT
+================================================================ */
+
 .student-brand-name {
-  color: var(--student-green-dark);
+
+  color:
+    var(--sidebar-green-dark);
+
 
   font-size: 18px;
 
   font-weight: 750;
 
-  letter-spacing: -0.4px;
+
+  letter-spacing: -0.45px;
+
+  line-height: 1.1;
 }
 
 
 .student-brand-tagline {
-  margin-top: 2px;
 
-  color: var(--student-muted);
+  margin-top: 4px;
 
-  font-size: 10px;
+  color:
+    var(--sidebar-muted);
+
+
+  font-size: 9.5px;
 
   line-height: 1.3;
 }
 
 
-/* ============================================================
+/* ================================================================
    NAVIGATION
-============================================================ */
+================================================================ */
 
 .student-sidebar-nav {
+
   flex: 1;
 
-  padding-top: 20px;
+  min-height: 0;
+
+
+  padding-top: 19px;
+
 
   overflow-y: auto;
 
+
   scrollbar-width: thin;
 
+
   scrollbar-color:
-    #DDE8E0
+    #dce8df
     transparent;
 }
 
 
+/* ================================================================
+   SECTION LABEL
+================================================================ */
+
 .sidebar-label {
+
   padding:
     0
     11px;
 
-  margin:
-    0 0 7px;
 
-  color: #9CA7A1;
+  margin:
+    0
+    0
+    7px;
+
+
+  color:
+    #9ca7a1;
+
 
   font-size: 9px;
 
-  font-weight: 750;
+  font-weight: 800;
+
 
   letter-spacing: 1.35px;
 }
 
 
 .sidebar-label-spaced {
-  margin-top: 22px;
+
+  margin-top: 21px;
 }
 
 
-/* ============================================================
+/* ================================================================
    NAV ITEM
-============================================================ */
+================================================================ */
 
 .student-nav-item {
+
   position: relative;
 
+
   display: flex;
+
   align-items: center;
 
-  gap: 12px;
 
-  min-height: 43px;
+  gap: 11px;
+
+
+  min-height: 44px;
+
 
   padding:
     8px
-    12px;
+    11px;
+
 
   margin-bottom: 4px;
 
-  border-radius: 12px;
 
-  color: #64726A;
+  border:
+    1px solid
+    transparent;
+
+
+  border-radius: 13px;
+
+
+  color:
+    var(--sidebar-text);
+
 
   font-size: 13px;
 
-  font-weight: 500;
+  font-weight: 540;
+
 
   text-decoration: none;
 
+
   transition:
+
     background 0.18s ease,
+
     color 0.18s ease,
-    transform 0.18s ease;
+
+    border-color 0.18s ease,
+
+    transform 0.18s ease,
+
+    box-shadow 0.18s ease;
 }
 
+
+/* ================================================================
+   NAV HOVER
+================================================================ */
 
 .student-nav-item:hover {
-  background: #F4F9F5;
 
-  color: var(--student-green-dark);
-
-  transform: translateX(2px);
-}
+  transform:
+    translateX(2px);
 
 
-.student-nav-item.active {
+  border-color:
+    #e5eee7;
+
+
   background:
     linear-gradient(
       90deg,
-      #DFF3E4,
-      #E6F5EA
+      #f5faf6,
+      #fffdf5
     );
 
-  color: #315B42;
 
-  font-weight: 650;
-
-  box-shadow:
-    inset 0 0 0 1px rgba(111, 159, 125, 0.08);
+  color:
+    var(--sidebar-green-dark);
 }
 
 
+/* ================================================================
+   ACTIVE NAV ITEM
+================================================================ */
+
+.student-nav-item.active {
+
+  border-color:
+    rgba(111, 159, 125, 0.13);
+
+
+  /*
+    Green + tiny warm yellow tint
+  */
+
+  background:
+
+    linear-gradient(
+      100deg,
+
+      #dff3e4 0%,
+
+      #ebf7ee 72%,
+
+      #fff9e4 100%
+    );
+
+
+  color:
+    #315b42;
+
+
+  font-weight:
+    680;
+
+
+  box-shadow:
+
+    inset
+    0 0 0 1px
+    rgba(111, 159, 125, 0.045),
+
+    0 5px 13px
+    rgba(91, 129, 101, 0.055);
+}
+
+
+/* ================================================================
+   ACTIVE INDICATOR
+================================================================ */
+
 .student-nav-item.active::before {
-  content: '';
+
+  content: "";
 
   position: absolute;
 
-  left: 0;
+
+  left: -1px;
+
 
   top: 8px;
   bottom: 8px;
 
+
   width: 3px;
 
-  background: #6F9F7D;
 
   border-radius:
     0
     5px
     5px
     0;
+
+
+  /*
+    Warm yellow indicator
+    makes active navigation feel more premium
+  */
+
+  background:
+    linear-gradient(
+      180deg,
+
+      #6f9f7d,
+
+      #f0cc58
+    );
 }
 
 
-.student-nav-icon {
-  width: 27px;
-  height: 27px;
+/* ================================================================
+   NAV ICON
+================================================================ */
 
-  flex-shrink: 0;
+.student-nav-icon {
+
+  width: 29px;
+  height: 29px;
+
+
+  flex: 0 0 29px;
+
 
   display: flex;
+
   align-items: center;
   justify-content: center;
+
 
   border-radius: 9px;
 
-  font-size: 16px;
+
+  color:
+    #6e7f75;
+
+
+  font-size: 15px;
+
+  line-height: 1;
+
 
   transition:
-    background 0.18s ease;
+
+    background 0.18s ease,
+
+    color 0.18s ease,
+
+    transform 0.18s ease;
 }
 
+
+/* ================================================================
+   HOVER ICON
+================================================================ */
+
+.student-nav-item:hover
+.student-nav-icon {
+
+  background:
+    rgba(255, 255, 255, 0.78);
+}
+
+
+/* ================================================================
+   ACTIVE ICON
+================================================================ */
 
 .student-nav-item.active
 .student-nav-icon {
+
   background:
-    rgba(255, 255, 255, 0.65);
+    rgba(255, 255, 255, 0.78);
+
+
+  color:
+    #527861;
+
+
+  transform:
+    scale(1.02);
 }
 
 
-/* ============================================================
+/* ================================================================
+   SPECIAL CHECK-IN ACCENT
+================================================================ */
+
+/*
+   Check-in is one of the most important daily actions,
+   so it gets a tiny warm-yellow visual cue when hovered.
+*/
+
+.student-nav-item[href="/checkin"]:hover
+.student-nav-icon {
+
+  background:
+    #fff4c7;
+
+  color:
+    #b18c2f;
+}
+
+
+/* ================================================================
    FOOTER / PROFILE
-============================================================ */
+================================================================ */
 
 .student-sidebar-footer {
-  padding-top: 14px;
+
+  padding-top: 13px;
+
 
   border-top:
-    1px solid var(--student-border-soft);
+    1px solid
+    var(--sidebar-line-soft);
 }
 
 
+/* ================================================================
+   PROFILE CARD
+================================================================ */
+
 .sidebar-profile-card {
+
   display: flex;
+
   align-items: center;
+
 
   gap: 10px;
 
-  padding: 10px;
 
-  background:
-    #FAFCFA;
+  padding: 9px;
+
 
   border:
-    1px solid var(--student-border);
+    1px solid
+    var(--sidebar-line);
 
-  border-radius: 13px;
+
+  border-radius: 14px;
+
+
+  /*
+    Soft yellow/green profile background
+  */
+
+  background:
+
+    linear-gradient(
+      135deg,
+
+      rgba(255, 255, 255, 0.92),
+
+      rgba(255, 250, 232, 0.75)
+    );
+
 
   text-decoration: none;
 
+
+  box-shadow:
+    0 4px 14px
+    rgba(55, 78, 64, 0.025);
+
+
   transition:
+
     background 0.18s ease,
-    border-color 0.18s ease;
+
+    border-color 0.18s ease,
+
+    transform 0.18s ease,
+
+    box-shadow 0.18s ease;
 }
 
+
+/* ================================================================
+   PROFILE CARD HOVER
+================================================================ */
 
 .sidebar-profile-card:hover {
-  background: #F4F9F5;
 
-  border-color: #DCE9DF;
+  transform:
+    translateY(-1px);
+
+
+  border-color:
+    #e5d9a8;
+
+
+  background:
+    #fffaf0;
+
+
+  box-shadow:
+    0 7px 18px
+    rgba(113, 91, 36, 0.055);
 }
 
 
-.sidebar-avatar {
-  width: 37px;
-  height: 37px;
+/* ================================================================
+   AVATAR
+================================================================ */
 
-  flex-shrink: 0;
+.sidebar-avatar {
+
+  width: 38px;
+  height: 38px;
+
+
+  flex: 0 0 38px;
+
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
+
+  border:
+    1px solid
+    #e1d7ad;
+
+
   border-radius: 50%;
 
-  background: #EEE8FF;
 
-  color: #78659B;
+  /*
+    Yellow + green avatar
+  */
+
+  background:
+
+    linear-gradient(
+      135deg,
+
+      #fff2b8,
+
+      #e6f3e8
+    );
+
+
+  color:
+    #58735d;
+
 
   font-size: 13px;
 
-  font-weight: 700;
+  font-weight: 750;
+
+
+  box-shadow:
+    0 3px 8px
+    rgba(119, 99, 42, 0.08);
 }
 
 
+/* ================================================================
+   PROFILE INFO
+================================================================ */
+
 .sidebar-profile-info {
+
   min-width: 0;
 
   flex: 1;
 
+
   display: flex;
+
   flex-direction: column;
 }
 
 
 .sidebar-profile-info strong {
+
   overflow: hidden;
 
-  color: #3D4942;
+
+  color:
+    #3d4942;
+
 
   font-size: 12px;
 
-  font-weight: 650;
+  font-weight: 680;
+
 
   text-overflow: ellipsis;
 
@@ -342,142 +857,262 @@
 
 
 .sidebar-profile-info span {
+
   margin-top: 2px;
 
-  color: #9AA49E;
 
-  font-size: 10px;
+  color:
+    #9aa49e;
+
+
+  font-size: 9.5px;
 }
 
+
+/* ================================================================
+   PROFILE ARROW
+================================================================ */
 
 .sidebar-profile-arrow {
-  color: #A0AAA4;
 
-  font-size: 20px;
+  color:
+    #99a69e;
+
+
+  font-size: 19px;
 
   line-height: 1;
+
+
+  transition:
+    color 0.18s ease,
+
+    transform 0.18s ease;
 }
 
 
-/* ============================================================
+.sidebar-profile-card:hover
+.sidebar-profile-arrow {
+
+  color:
+    #b99432;
+
+
+  transform:
+    translateX(2px);
+}
+
+
+/* ================================================================
    ACCOUNT LINKS
-============================================================ */
+================================================================ */
 
 .sidebar-account-links {
+
   display: flex;
+
   align-items: center;
 
-  gap: 5px;
+
+  gap: 4px;
+
 
   margin-top: 7px;
 
+
   padding:
     0
-    3px;
+    2px;
 }
 
+
+/* ================================================================
+   ACCOUNT LINKS — BASE
+================================================================ */
 
 .sidebar-account-links a,
 .sidebar-account-links button {
+
   flex: 1;
 
+
+  min-height: 32px;
+
+
   display: flex;
+
   align-items: center;
   justify-content: center;
 
+
   gap: 5px;
 
-  min-height: 31px;
 
-  padding: 5px;
+  padding: 4px;
 
-  border: none;
 
-  background: transparent;
+  border:
+    0;
+
 
   border-radius: 8px;
 
-  color: #89948D;
 
-  font-family: inherit;
+  background:
+    transparent;
 
-  font-size: 9.5px;
+
+  color:
+    #89948d;
+
+
+  font-family:
+    inherit;
+
+
+  font-size: 10px;
+
 
   text-decoration: none;
 
+
   cursor: pointer;
 
+
   transition:
+
     background 0.18s ease,
-    color 0.18s ease;
+
+    color 0.18s ease,
+
+    transform 0.18s ease;
 }
 
+
+/* ================================================================
+   PROFILE LINK
+================================================================ */
 
 .sidebar-account-links a:hover {
-  background: #F3F9F4;
 
-  color: #4C735A;
+  background:
+    #fff5cf;
+
+
+  color:
+    #8f7528;
+
+
+  transform:
+    translateY(-1px);
 }
 
+
+/* ================================================================
+   EDIT PROFILE LINK
+================================================================ */
+
+.sidebar-account-links a[href="/profile/edit"]:hover {
+
+  background:
+    #eef7ef;
+
+
+  color:
+    #4c735a;
+}
+
+
+/* ================================================================
+   LOGOUT
+================================================================ */
 
 .sidebar-account-links button:hover {
-  background: #FCE4EC;
 
-  color: #A15B70;
+  background:
+    #fcebed;
+
+
+  color:
+    #a15b70;
+
+
+  transform:
+    translateY(-1px);
 }
 
 
-/* ============================================================
+/* ================================================================
    SCROLLBAR
-============================================================ */
+================================================================ */
 
 .student-sidebar-nav::-webkit-scrollbar {
+
   width: 4px;
 }
 
+
 .student-sidebar-nav::-webkit-scrollbar-track {
-  background: transparent;
+
+  background:
+    transparent;
 }
+
 
 .student-sidebar-nav::-webkit-scrollbar-thumb {
-  background: #DCE8DF;
 
-  border-radius: 10px;
+  background:
+    #dce8df;
+
+
+  border-radius:
+    10px;
 }
 
 
-/* ============================================================
-   TABLET
-============================================================ */
+.student-sidebar-nav::-webkit-scrollbar-thumb:hover {
+
+  background:
+    #cbdccf;
+}
+
+
+/* ================================================================
+   RESPONSIVE — TABLET
+================================================================ */
 
 @media (max-width: 900px) {
 
   .student-sidebar {
+
     width: 220px;
   }
 
 }
 
 
-/* ============================================================
-   MOBILE
-============================================================ */
+/* ================================================================
+   RESPONSIVE — MOBILE
+================================================================ */
 
 @media (max-width: 768px) {
 
   .student-sidebar {
+
     width: 72px;
 
     padding:
-      18px
-      9px;
+      17px
+      8px;
   }
 
 
   .student-brand {
+
     justify-content: center;
 
     padding-left: 0;
+
     padding-right: 0;
   }
 
@@ -488,11 +1123,13 @@
   .sidebar-profile-info,
   .sidebar-profile-arrow,
   .sidebar-account-links {
+
     display: none;
   }
 
 
   .student-nav-item {
+
     justify-content: center;
 
     padding: 8px;
@@ -502,11 +1139,13 @@
 
 
   .student-nav-item.active::before {
-    left: -9px;
+
+    left: -8px;
   }
 
 
   .sidebar-profile-card {
+
     justify-content: center;
 
     padding: 7px;
@@ -515,21 +1154,25 @@
 }
 
 
-/* ============================================================
-   SMALL MOBILE
-============================================================ */
+/* ================================================================
+   RESPONSIVE — SMALL MOBILE
+================================================================ */
 
 @media (max-width: 480px) {
 
   .student-sidebar {
+
     width: 64px;
 
-    padding-left: 7px;
-    padding-right: 7px;
+    padding-left: 6px;
+
+    padding-right: 6px;
   }
 
+
   .student-nav-item.active::before {
-    left: -7px;
+
+    left: -6px;
   }
 
 }
