@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import '../styles/Chat.css'
 
+
 const SUGGESTIONS = [
   "I'm really stressed about my exams 😰",
   "I can't sleep because of university pressure",
@@ -13,7 +14,9 @@ const SUGGESTIONS = [
   "I feel burned out and can't motivate myself",
 ]
 
+
 export default function Chat() {
+
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -30,14 +33,26 @@ export default function Chat() {
 
   const bottomRef = useRef(null)
 
-  // Automatically scroll to the newest message
+
+  // ============================================================
+  // AUTO SCROLL
+  // ============================================================
+
   useEffect(() => {
+
     bottomRef.current?.scrollIntoView({
       behavior: 'smooth'
     })
+
   }, [messages])
 
+
+  // ============================================================
+  // SEND MESSAGE
+  // ============================================================
+
   const sendMessage = async (text) => {
+
     const msg = (text || input).trim()
 
     if (!msg || loading) return
@@ -46,7 +61,9 @@ export default function Chat() {
     setInput('')
     setLoading(true)
 
+
     // Immediately display student's message
+
     setMessages(prev => [
       ...prev,
       {
@@ -55,12 +72,16 @@ export default function Chat() {
       }
     ])
 
+
     try {
+
       const res = await api.post('/chat', {
         message: msg
       })
 
+
       // Display MindBot response
+
       setMessages(prev => [
         ...prev,
         {
@@ -70,11 +91,14 @@ export default function Chat() {
         }
       ])
 
+
       if (res.data.is_crisis) {
         setIsCrisis(true)
       }
 
+
     } catch (error) {
+
       console.error('MindBot error:', error)
 
       setMessages(prev => [
@@ -88,31 +112,57 @@ export default function Chat() {
       ])
 
     } finally {
+
       setLoading(false)
+
     }
+
   }
+
+
+  // ============================================================
+  // KEYBOARD HANDLER
+  // ============================================================
 
   const handleKeyDown = (e) => {
+
     // Enter = send
     // Shift + Enter = new line
+
     if (e.key === 'Enter' && !e.shiftKey) {
+
       e.preventDefault()
+
       sendMessage()
+
     }
+
   }
 
+
+  // ============================================================
+  // CLEAR CHAT / NEW CHAT
+  // ============================================================
+
   const clearChat = async () => {
+
     const confirmed = window.confirm(
       'Start a new conversation? This will clear the current chat.'
     )
 
     if (!confirmed) return
 
+
     try {
+
       await api.post('/chat/clear')
+
     } catch (error) {
+
       console.error('Could not clear chat:', error)
+
     }
+
 
     setMessages([
       {
@@ -122,14 +172,27 @@ export default function Chat() {
       }
     ])
 
+
     setIsCrisis(false)
+
     setShowSuggest(true)
+
   }
 
+
+  // ============================================================
+  // UI
+  // ============================================================
+
   return (
+
     <div className="chat-page">
 
-      {/* Chat header */}
+
+      {/* ======================================================
+          CHAT HEADER
+      ====================================================== */}
+
       <div className="chat-header">
 
         <div className="chat-header-info">
@@ -138,24 +201,40 @@ export default function Chat() {
             💚
           </div>
 
-          <div>
-            <h2>MindBot</h2>
+
+          <div className="chat-header-text">
+
+            <h2>
+              MindBot
+            </h2>
 
             <p>
+
               <span className="online-dot"></span>
+
               AI Wellness Support · Available 24/7
+
             </p>
+
           </div>
 
         </div>
+
 
         <div className="chat-header-actions">
 
           <button
             className="chat-clear-btn"
             onClick={clearChat}
+            type="button"
           >
+
+            <span className="new-chat-icon">
+              ✨
+            </span>
+
             New chat
+
           </button>
 
         </div>
@@ -163,45 +242,84 @@ export default function Chat() {
       </div>
 
 
-      {/* Disclaimer */}
+
+      {/* ======================================================
+          DISCLAIMER
+      ====================================================== */}
+
       <div className="chat-disclaimer">
 
-        🛡 MindBot is an AI support tool — not a medical service.
+        <span className="disclaimer-icon">
+          🛡️
+        </span>
 
-        {' '}
+        <span className="disclaimer-text">
+          MindBot is an AI support tool — not a medical service.
+        </span>
 
-        <Link to="/booking">
+        <Link
+          to="/booking"
+          className="counsellor-link"
+        >
           Book a counsellor appointment
+          <span className="link-arrow">
+            →
+          </span>
         </Link>
 
       </div>
 
 
-      {/* Crisis banner */}
+
+      {/* ======================================================
+          CRISIS BANNER
+      ====================================================== */}
+
       {isCrisis && (
+
         <div className="crisis-banner">
 
-          <strong>
-            🆘 Immediate Support Available
-          </strong>
+          <div className="crisis-content">
 
-          <span>
-            Please contact the Sri Lanka Crisis Support Line: 1333
-          </span>
+            <div className="crisis-icon">
+              🆘
+            </div>
+
+            <div>
+
+              <strong>
+                Immediate Support Available
+              </strong>
+
+              <span>
+                Please contact the Sri Lanka Crisis Support Line: 1333
+              </span>
+
+            </div>
+
+          </div>
+
 
           <Link
             to="/booking"
             className="crisis-book-btn"
           >
             Book Counsellor
+            <span>→</span>
           </Link>
 
         </div>
+
       )}
 
 
-      {/* Messages */}
+
+      {/* ======================================================
+          CHAT MESSAGES
+      ====================================================== */}
+
       <div className="chat-messages">
+
 
         {messages.map((msg, i) => (
 
@@ -214,35 +332,63 @@ export default function Chat() {
             }`}
           >
 
+
             {msg.role === 'bot' && (
+
               <div className="bot-avatar">
                 💚
               </div>
+
             )}
 
+
             <div
-              className={`chat-bubble ${
+              className={`chat-message-content ${
                 msg.role === 'user'
-                  ? 'user-bubble'
-                  : 'bot-bubble'
-              } ${
-                msg.is_crisis
-                  ? 'crisis-bubble'
-                  : ''
+                  ? 'user-message-content'
+                  : 'bot-message-content'
               }`}
             >
 
-              {/* Render line breaks */}
-              {msg.content.split('\n').map((line, j) => (
-                <span key={j}>
-                  {line}
+              <div
+                className={`chat-bubble ${
+                  msg.role === 'user'
+                    ? 'user-bubble'
+                    : 'bot-bubble'
+                } ${
+                  msg.is_crisis
+                    ? 'crisis-bubble'
+                    : ''
+                }`}
+              >
 
-                  {j < msg.content.split('\n').length - 1 && (
-                    <br />
-                  )}
+                {/* Render line breaks */}
 
-                </span>
-              ))}
+                {msg.content.split('\n').map((line, j) => (
+
+                  <span key={j}>
+
+                    {line}
+
+                    {j < msg.content.split('\n').length - 1 && (
+                      <br />
+                    )}
+
+                  </span>
+
+                ))}
+
+              </div>
+
+
+              <span className="message-label">
+
+                {msg.role === 'user'
+                  ? 'You'
+                  : 'MindBot'
+                }
+
+              </span>
 
             </div>
 
@@ -251,7 +397,11 @@ export default function Chat() {
         ))}
 
 
-        {/* Typing indicator */}
+
+        {/* ==================================================
+            TYPING INDICATOR
+        ================================================== */}
+
         {loading && (
 
           <div className="chat-bubble-wrap bot-wrap">
@@ -260,11 +410,17 @@ export default function Chat() {
               💚
             </div>
 
-            <div className="chat-bubble bot-bubble typing-bubble">
+            <div className="chat-message-content">
 
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
+              <div className="chat-bubble bot-bubble typing-bubble">
+
+                <span className="typing-dot"></span>
+
+                <span className="typing-dot"></span>
+
+                <span className="typing-dot"></span>
+
+              </div>
 
             </div>
 
@@ -273,20 +429,43 @@ export default function Chat() {
         )}
 
 
+
         {/* Auto-scroll target */}
+
         <div ref={bottomRef} />
 
       </div>
 
 
-      {/* Suggestions */}
+
+      {/* ======================================================
+          SUGGESTED TOPICS
+      ====================================================== */}
+
       {showSuggest && (
 
         <div className="chat-suggestions">
 
-          <p className="suggest-label">
-            Suggested topics:
-          </p>
+          <div className="suggest-header">
+
+            <div className="suggest-icon">
+              ✨
+            </div>
+
+            <div>
+
+              <p className="suggest-label">
+                Suggested topics
+              </p>
+
+              <span className="suggest-description">
+                Start a conversation with one of these
+              </span>
+
+            </div>
+
+          </div>
+
 
           <div className="suggest-chips">
 
@@ -297,8 +476,17 @@ export default function Chat() {
                 className="suggest-chip"
                 onClick={() => sendMessage(suggestion)}
                 disabled={loading}
+                type="button"
               >
-                {suggestion}
+
+                <span className="suggest-chip-arrow">
+                  →
+                </span>
+
+                <span>
+                  {suggestion}
+                </span>
+
               </button>
 
             ))}
@@ -310,29 +498,57 @@ export default function Chat() {
       )}
 
 
-      {/* Input */}
+
+      {/* ======================================================
+          INPUT AREA
+      ====================================================== */}
+
       <div className="chat-input-area">
 
-        <textarea
-          className="chat-input"
-          placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
-          rows={1}
-        />
+        <div className="chat-input-wrapper">
+
+          <textarea
+            className="chat-input"
+            placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+            rows={1}
+          />
+
+        </div>
+
 
         <button
           className="chat-send-btn"
           onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
+          type="button"
+          aria-label="Send message"
         >
-          {loading ? '...' : '↑'}
+
+          {loading ? (
+
+            <span className="send-loading">
+              ...
+            </span>
+
+          ) : (
+
+            <span className="send-icon">
+              ↑
+            </span>
+
+          )}
+
         </button>
 
       </div>
 
+
     </div>
+
   )
+
 }
