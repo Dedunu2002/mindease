@@ -339,25 +339,135 @@ class Appointment(db.Model):
 
 # ── Table 6: Goal ─────────────────────────────────────────────
 # Stores weekly wellness goals set by students
+# ── Table 6: Goal ─────────────────────────────────────────────
+# Stores weekly wellness goals set by students
 class Goal(db.Model):
     __tablename__ = 'goals'
 
     id              = db.Column(db.Integer, primary_key=True)
-    user_id         = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id         = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        nullable=False
+    )
     goal_text       = db.Column(db.Text, nullable=False)
     week_start_date = db.Column(db.Date, nullable=False)
-    status          = db.Column(db.String(20), default='pending')
-    # status: 'pending', 'achieved', 'not_achieved'
-    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    status          = db.Column(
+        db.String(20),
+        default='pending'
+    )
+    # status:
+    # 'pending'
+    # 'achieved'
+    # 'not_achieved'
+
+    created_at      = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    # One Goal -> many daily progress records
+    daily_progress = db.relationship(
+        'GoalDailyProgress',
+        backref='goal',
+        lazy=True,
+        cascade='all, delete-orphan'
+    )
+
+    def to_dict(self):
+
+        # Sort Monday -> Sunday
+        daily = sorted(
+            self.daily_progress,
+            key=lambda item: item.progress_date
+        )
+
+        completed_days = sum(
+            1
+            for item in daily
+            if item.completed
+        )
+
+        return {
+            'id': self.id,
+
+            'goal_text': self.goal_text,
+
+            'week_start': self.week_start_date.isoformat(),
+
+            'status': self.status,
+
+            'completed_days': completed_days,
+
+            'total_days': 7,
+
+            'progress_percentage': round(
+                (completed_days / 7) * 100
+            ),
+
+            'daily_progress': [
+                item.to_dict()
+                for item in daily
+            ]
+        }
+
+
+# ── Table 7: GoalDailyProgress ────────────────────────────────
+# Stores day-by-day completion for a weekly wellness goal
+class GoalDailyProgress(db.Model):
+    __tablename__ = 'goal_daily_progress'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    goal_id = db.Column(
+        db.Integer,
+        db.ForeignKey('goals.id'),
+        nullable=False
+    )
+
+    progress_date = db.Column(
+        db.Date,
+        nullable=False
+    )
+
+    completed = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'goal_id',
+            'progress_date',
+            name='uq_goal_daily_progress'
+        ),
+    )
 
     def to_dict(self):
         return {
-            'id':        self.id,
-            'goal_text': self.goal_text,
-            'week_start':self.week_start_date.isoformat(),
-            'status':    self.status,
-        }
+            'id': self.id,
 
+            'date': self.progress_date.isoformat(),
+
+            'completed': bool(self.completed),
+
+            'is_today': (
+                self.progress_date == date.today()
+            ),
+
+            'is_future': (
+                self.progress_date > date.today()
+            )
+        }
 
 # ── Table 7: CommunityPost ────────────────────────────────────
 # Stores anonymous community board posts
@@ -1907,92 +2017,484 @@ def get_appointments():
 
 # Add to app.py after booking routes
 
+# ============================================================
+# GOALS API
+# ============================================================
+
+
+def ensure_goal_daily_progress(goal):
+    """
+    Make sure the goal has one daily-progress record
+    for every day of its Monday-Sunday week.
+
+    This also supports old goals that were created before
+    daily tracking was added.
+    """
+
+    existing_dates = {
+        item.progress_date
+        for item in goal.daily_progress
+    }
+
+    for day_offset in range(7):
+
+        progress_date = (
+            goal.week_start_date
+            + timedelta(days=day_offset)
+        )
+
+        if progress_date not in existing_dates:
+
+            progress = GoalDailyProgress(
+                goal_id=goal.id,
+                progress_date=progress_date,
+                completed=False
+            )
+
+            db.session.add(progress)
+
+    db.session.commit()
+
+
+# ============================================================
+# CREATE WEEKLY GOAL
+# ============================================================
+
 @app.route('/api/goals', methods=['POST'])
 @login_required
 def create_goal():
+
     user_id = session['user_id']
-    data    = request.get_json()
-    text    = data.get('goal_text', '').strip()
+
+    data = request.get_json() or {}
+
+    text = data.get(
+        'goal_text',
+        ''
+    ).strip()
+
+
+    # --------------------------------------------------------
+    # Validate goal
+    # --------------------------------------------------------
 
     if not text:
-        return jsonify({'error': 'Goal text cannot be empty'}), 400
+
+        return jsonify({
+            'error': 'Goal text cannot be empty'
+        }), 400
+
+
     if len(text) > 200:
-        return jsonify({'error': 'Goal must be under 200 characters'}), 400
 
-    # Week start = Monday of current week
-    from datetime import date, timedelta
-    today      = date.today()
-    week_start = today - timedelta(days=today.weekday())
+        return jsonify({
+            'error': 'Goal must be under 200 characters'
+        }), 400
 
-    # Only one active goal per week per student
+
+    # --------------------------------------------------------
+    # Current week starts Monday
+    # --------------------------------------------------------
+
+    today = date.today()
+
+    week_start = (
+        today
+        - timedelta(days=today.weekday())
+    )
+
+
+    # --------------------------------------------------------
+    # ONE ACTIVE GOAL PER WEEK
+    # --------------------------------------------------------
+
     existing = Goal.query.filter_by(
-        user_id         = user_id,
-        week_start_date = week_start,
-        status          = 'pending'
+        user_id=user_id,
+        week_start_date=week_start,
+        status='pending'
     ).first()
 
+
     if existing:
-        return jsonify({'error': 'You already have an active goal this week. Mark it before setting a new one.'}), 409
+
+        return jsonify({
+            'error':
+                'You already have an active goal this week. '
+                'Complete or update it before setting a new one.'
+        }), 409
+
+
+    # --------------------------------------------------------
+    # Create goal
+    # --------------------------------------------------------
 
     goal = Goal(
-        user_id         = user_id,
-        goal_text       = text,
-        week_start_date = week_start,
-        status          = 'pending',
+        user_id=user_id,
+        goal_text=text,
+        week_start_date=week_start,
+        status='pending'
     )
+
     db.session.add(goal)
+
+    # We need the ID before creating daily records
+    db.session.flush()
+
+
+    # --------------------------------------------------------
+    # Create Monday-Sunday records
+    # --------------------------------------------------------
+
+    for day_offset in range(7):
+
+        progress_date = (
+            week_start
+            + timedelta(days=day_offset)
+        )
+
+        progress = GoalDailyProgress(
+            goal_id=goal.id,
+            progress_date=progress_date,
+            completed=False
+        )
+
+        db.session.add(progress)
+
+
     db.session.commit()
 
-    return jsonify(goal.to_dict()), 201
 
+    return jsonify(
+        goal.to_dict()
+    ), 201
+
+
+# ============================================================
+# GET ALL GOALS
+# ============================================================
 
 @app.route('/api/goals')
 @login_required
 def get_goals():
+
     user_id = session['user_id']
-    goals   = (Goal.query
-               .filter_by(user_id=user_id)
-               .order_by(Goal.week_start_date.desc())
-               .limit(12)
-               .all())
-    return jsonify([g.to_dict() for g in goals]), 200
 
 
-@app.route('/api/goals/<int:goal_id>', methods=['PATCH'])
+    goals = (
+        Goal.query
+        .filter_by(user_id=user_id)
+        .order_by(
+            Goal.week_start_date.desc()
+        )
+        .limit(12)
+        .all()
+    )
+
+
+    # Make sure old goals also receive
+    # their 7 daily records.
+
+    for goal in goals:
+
+        if len(goal.daily_progress) < 7:
+
+            ensure_goal_daily_progress(
+                goal
+            )
+
+
+    return jsonify([
+        goal.to_dict()
+        for goal in goals
+    ]), 200
+
+
+# ============================================================
+# UPDATE OVERALL GOAL STATUS
+# ============================================================
+
+@app.route(
+    '/api/goals/<int:goal_id>',
+    methods=['PATCH']
+)
 @login_required
 def update_goal(goal_id):
-    """Mark a goal as achieved or not_achieved"""
+
     user_id = session['user_id']
-    goal    = Goal.query.filter_by(id=goal_id, user_id=user_id).first()
+
+
+    goal = Goal.query.filter_by(
+        id=goal_id,
+        user_id=user_id
+    ).first()
+
 
     if not goal:
-        return jsonify({'error': 'Goal not found'}), 404
 
-    data   = request.get_json()
+        return jsonify({
+            'error': 'Goal not found'
+        }), 404
+
+
+    data = request.get_json() or {}
+
     status = data.get('status')
 
-    if status not in ['achieved', 'not_achieved']:
-        return jsonify({'error': 'Status must be achieved or not_achieved'}), 400
+
+    if status not in [
+        'achieved',
+        'not_achieved'
+    ]:
+
+        return jsonify({
+            'error':
+                'Status must be achieved or not_achieved'
+        }), 400
+
 
     goal.status = status
+
     db.session.commit()
-    return jsonify(goal.to_dict()), 200
 
 
-@app.route('/api/goals/<int:goal_id>', methods=['DELETE'])
+    return jsonify(
+        goal.to_dict()
+    ), 200
+
+
+# ============================================================
+# UPDATE DAILY GOAL PROGRESS
+# ============================================================
+
+@app.route(
+    '/api/goals/<int:goal_id>/daily/<date_string>',
+    methods=['PATCH']
+)
 @login_required
-def delete_goal(goal_id):
+def update_goal_daily_progress(
+    goal_id,
+    date_string
+):
+
     user_id = session['user_id']
-    goal    = Goal.query.filter_by(id=goal_id, user_id=user_id).first()
+
+
+    # --------------------------------------------------------
+    # Find goal belonging to logged-in student
+    # --------------------------------------------------------
+
+    goal = Goal.query.filter_by(
+        id=goal_id,
+        user_id=user_id
+    ).first()
+
 
     if not goal:
-        return jsonify({'error': 'Goal not found'}), 404
+
+        return jsonify({
+            'error': 'Goal not found'
+        }), 404
+
+
+    # --------------------------------------------------------
+    # Parse date
+    # --------------------------------------------------------
+
+    try:
+
+        progress_date = date.fromisoformat(
+            date_string
+        )
+
+    except ValueError:
+
+        return jsonify({
+            'error':
+                'Invalid date. Use YYYY-MM-DD.'
+        }), 400
+
+
+    # --------------------------------------------------------
+    # Check that date belongs to this week
+    # --------------------------------------------------------
+
+    week_end = (
+        goal.week_start_date
+        + timedelta(days=6)
+    )
+
+
+    if (
+        progress_date < goal.week_start_date
+        or progress_date > week_end
+    ):
+
+        return jsonify({
+            'error':
+                'This date is outside the goal week.'
+        }), 400
+
+
+    # --------------------------------------------------------
+    # Don't allow future days
+    # --------------------------------------------------------
+
+    today = date.today()
+
+
+    if progress_date > today:
+
+        return jsonify({
+            'error':
+                'Future days cannot be marked as completed.'
+        }), 400
+
+
+    # --------------------------------------------------------
+    # Get completed value
+    # --------------------------------------------------------
+
+    data = request.get_json() or {}
+
+    completed = data.get('completed')
+
+
+    if not isinstance(
+        completed,
+        bool
+    ):
+
+        return jsonify({
+            'error':
+                'completed must be true or false.'
+        }), 400
+
+
+    # --------------------------------------------------------
+    # Find daily record
+    # --------------------------------------------------------
+
+    progress = GoalDailyProgress.query.filter_by(
+        goal_id=goal.id,
+        progress_date=progress_date
+    ).first()
+
+
+    # --------------------------------------------------------
+    # Create if missing
+    # --------------------------------------------------------
+
+    if not progress:
+
+        progress = GoalDailyProgress(
+            goal_id=goal.id,
+            progress_date=progress_date,
+            completed=completed
+        )
+
+        db.session.add(progress)
+
+    else:
+
+        progress.completed = completed
+
+
+    db.session.commit()
+
+
+    # --------------------------------------------------------
+    # Check weekly completion
+    # --------------------------------------------------------
+
+    ensure_goal_daily_progress(
+        goal
+    )
+
+
+    daily_records = (
+        GoalDailyProgress.query
+        .filter_by(goal_id=goal.id)
+        .all()
+    )
+
+
+    completed_days = sum(
+        1
+        for item in daily_records
+        if item.completed
+    )
+
+
+    # Automatically mark the goal achieved
+    # when all 7 days are completed.
+
+    if completed_days == 7:
+
+        goal.status = 'achieved'
+
+    elif goal.status == 'achieved':
+
+        # If a previously completed day is
+        # unchecked, return to pending.
+
+        goal.status = 'pending'
+
+
+    db.session.commit()
+
+
+    return jsonify({
+        'message':
+            'Daily progress updated.',
+
+        'goal':
+            goal.to_dict()
+    }), 200
+
+
+# ============================================================
+# DELETE GOAL
+# ============================================================
+
+@app.route(
+    '/api/goals/<int:goal_id>',
+    methods=['DELETE']
+)
+@login_required
+def delete_goal(goal_id):
+
+    user_id = session['user_id']
+
+
+    goal = Goal.query.filter_by(
+        id=goal_id,
+        user_id=user_id
+    ).first()
+
+
+    if not goal:
+
+        return jsonify({
+            'error': 'Goal not found'
+        }), 404
+
+
+    # Because Goal has:
+    #
+    # cascade='all, delete-orphan'
+    #
+    # all daily-progress records belonging
+    # to this goal will also be deleted.
 
     db.session.delete(goal)
-    db.session.commit()
-    return jsonify({'message': 'Goal deleted'}), 200        
 
-# Add to app.py after goal routes
+    db.session.commit()
+
+
+    return jsonify({
+        'message':
+            'Goal and daily progress deleted.'
+    }), 200
 
 VALID_EMOJIS = {'heart', 'star', 'hug'}
 
