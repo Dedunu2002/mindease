@@ -116,8 +116,17 @@ export default function Community() {
       setPosts(prev => [res.data, ...prev])
       setNewPost('')
     } catch (err) {
-      setPostError(err.response?.data?.error || 'Could not post. Try again.')
-    } finally {
+  console.error('Community post error:', err)
+
+  console.error('Response:', err.response)
+  console.error('Response data:', err.response?.data)
+  console.error('Status:', err.response?.status)
+
+  setPostError(
+    err.response?.data?.error ||
+    `Could not post. Server returned ${err.response?.status || 'an unknown error'}.`
+  )
+} finally {
       setPosting(false)
     }
   }
