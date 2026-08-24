@@ -31,6 +31,8 @@ from reportlab.platypus import (
 )
 
 from functools import wraps
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 # ── Initialise app ────────────────────────────────────────────
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -179,6 +181,36 @@ class User(db.Model):
             'is_approved':self.is_approved,
             'created_at': self.created_at.isoformat()
         }
+
+
+# ============================================================
+# TABLE — WEEKLY EMAIL DIGEST PREFERENCES
+# Stores whether a student has opted into the weekly email digest.
+# No journal content is stored here.
+# ============================================================
+
+class WeeklyDigestPreference(db.Model):
+    __tablename__ = 'weekly_digest_preferences'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        unique=True,
+        nullable=False
+    )
+
+    enabled = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
+    last_sent_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
 
 
 # ── Table 2: CheckIn ──────────────────────────────────────────
@@ -668,6 +700,610 @@ def admin_required(f):
         return f(*args, **kwargs)
 
     return decorated
+
+# ============================================================
+# WEEKLY EMAIL DIGEST
+# ============================================================
+
+def _build_weekly_digest_data(user_id):
+    """
+    Build a privacy-conscious weekly summary.
+
+    The digest intentionally does NOT include:
+    - Journal text/content
+    - Individual community posts
+    - Detailed AI risk scores
+
+    It only includes aggregated wellbeing activity.
+    """
+    today = date.today()
+    week_start = today - timedelta(days=6)
+    week_start_datetime = datetime.combine(
+        week_start,
+        datetime.min.time()
+    )
+
+    checkins = (
+        CheckIn.query
+        .filter(
+            CheckIn.user_id == user_id,
+            CheckIn.checkin_date >= week_start,
+            CheckIn.checkin_date <= today
+        )
+        .order_by(CheckIn.checkin_date.asc())
+        .all()
+    )
+
+    journals = (
+        Journal.query
+        .filter(
+            Journal.user_id == user_id,
+            Journal.created_at >= week_start_datetime
+        )
+        .order_by(Journal.created_at.asc())
+        .all()
+    )
+
+    positive = sum(
+        1 for j in journals
+        if str(j.mood_group or '').lower() == 'positive'
+    )
+
+    cautious = sum(
+        1 for j in journals
+        if str(j.mood_group or '').lower() == 'cautious'
+    )
+
+    negative = sum(
+        1 for j in journals
+        if str(j.mood_group or '').lower() == 'negative'
+    )
+
+    mood_counts = {
+        'Positive': positive,
+        'Cautious': cautious,
+        'Negative': negative
+    }
+
+    mood_pattern = 'No journal mood data yet'
+
+    if journals:
+        strongest = max(
+            mood_counts,
+            key=mood_counts.get
+        )
+
+        if mood_counts[strongest] > 0:
+            mood_pattern = strongest
+
+    streak = Streak.query.filter_by(
+        user_id=user_id
+    ).first()
+
+    current_streak = (
+        streak.current_streak
+        if streak else 0
+    )
+
+    # Use the existing personalized resource system.
+    latest_checkin = (
+        CheckIn.query
+        .filter_by(user_id=user_id)
+        .order_by(
+            CheckIn.checkin_date.desc(),
+            CheckIn.id.desc()
+        )
+        .first()
+    )
+
+    recommended_titles = []
+
+    if latest_checkin:
+        risk = str(
+            latest_checkin.risk_result or ''
+        ).strip().lower()
+
+        if risk in ['high', 'poor']:
+            categories = ['Stress', 'Anxiety', 'Sleep']
+        elif risk in ['medium', 'moderate']:
+            categories = ['Stress', 'Sleep', 'Anxiety']
+        else:
+            categories = ['Motivation', 'Sleep', 'Loneliness']
+
+        resources = (
+            Resource.query
+            .filter(Resource.category.in_(categories))
+            .order_by(Resource.created_at.desc())
+            .limit(2)
+            .all()
+        )
+
+        recommended_titles = [
+            resource.title
+            for resource in resources
+        ]
+
+    return {
+        'week_start': week_start,
+        'week_end': today,
+        'checkin_count': len(checkins),
+        'journal_count': len(journals),
+        'positive': positive,
+        'cautious': cautious,
+        'negative': negative,
+        'mood_pattern': mood_pattern,
+        'current_streak': current_streak,
+        'recommended_titles': recommended_titles
+    }
+
+
+def _send_weekly_digest_to_user(user):
+    """
+    Send one weekly digest email to one opted-in student.
+    Returns True when the email was sent successfully.
+    """
+    if not user or not user.email:
+        return False
+
+    data = _build_weekly_digest_data(user.id)
+
+    week_start = data['week_start'].strftime(
+        '%d %b %Y'
+    )
+    week_end = data['week_end'].strftime(
+        '%d %b %Y'
+    )
+
+    subject = (
+        '🌿 MindEase — Your Weekly Wellbeing Digest'
+    )
+
+    recommendations_text = (
+        '\n'.join(
+            f'  • {title}'
+            for title in data['recommended_titles']
+        )
+        if data['recommended_titles']
+        else '  • Explore the Wellness Resources section in MindEase.'
+    )
+
+    body = f"""Dear {user.name},
+
+Here is your MindEase wellbeing summary for
+{week_start} – {week_end}.
+
+YOUR WEEK AT A GLANCE
+--------------------
+Check-ins completed : {data['checkin_count']}
+Journal entries     : {data['journal_count']}
+Current streak      : {data['current_streak']} day(s)
+
+MOOD PATTERN
+------------
+Positive : {data['positive']}
+Cautious : {data['cautious']}
+Negative : {data['negative']}
+
+Overall recent mood pattern:
+{data['mood_pattern']}
+
+WELLBEING RESOURCES
+-------------------
+{recommendations_text}
+
+A small reminder:
+You do not need to have a perfect week. Small, consistent
+steps toward your wellbeing still count.
+
+Open MindEase to review your full wellbeing information,
+journal history, resources, goals and support options.
+
+This email contains an aggregated wellbeing summary.
+Your journal entries and private journal text are not included.
+
+— MindEase Student Wellbeing System
+"""
+
+    html_recommendations = ''.join(
+        f'<li>{title}</li>'
+        for title in data['recommended_titles']
+    )
+
+    if not html_recommendations:
+        html_recommendations = (
+            '<li>Explore the Wellness Resources section in MindEase.</li>'
+        )
+
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="
+    margin:0;
+    padding:0;
+    background:#f6faf7;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#405247;
+">
+<div style="
+    max-width:620px;
+    margin:30px auto;
+    background:#ffffff;
+    border:1px solid #e2ebe4;
+    border-radius:20px;
+    overflow:hidden;
+">
+    <div style="
+        padding:26px 30px;
+        background:linear-gradient(135deg,#edf8ef,#fffdf1);
+        border-bottom:1px solid #e6eee8;
+    ">
+        <div style="
+            color:#6c8d75;
+            font-size:11px;
+            font-weight:bold;
+            letter-spacing:1px;
+        ">
+            MINDEASE · WEEKLY DIGEST
+        </div>
+
+        <h1 style="
+            margin:8px 0 5px;
+            color:#30463a;
+            font-size:25px;
+        ">
+            Your wellbeing week 🌿
+        </h1>
+
+        <p style="
+            margin:0;
+            color:#7d8b82;
+            font-size:13px;
+        ">
+            {week_start} – {week_end}
+        </p>
+    </div>
+
+    <div style="padding:26px 30px;">
+
+        <p style="font-size:14px;">
+            Dear {user.name},
+        </p>
+
+        <p style="
+            color:#718078;
+            font-size:13px;
+            line-height:1.6;
+        ">
+            Here's a gentle look at your wellbeing activity this week.
+        </p>
+
+        <table width="100%" cellpadding="0" cellspacing="8"
+               style="margin:20px 0;">
+            <tr>
+                <td style="
+                    padding:16px;
+                    background:#f3f9f4;
+                    border-radius:12px;
+                    text-align:center;
+                ">
+                    <div style="font-size:22px;font-weight:bold;color:#527861;">
+                        {data['checkin_count']}
+                    </div>
+                    <div style="font-size:10px;color:#7d8982;">
+                        CHECK-INS
+                    </div>
+                </td>
+
+                <td style="
+                    padding:16px;
+                    background:#fff8df;
+                    border-radius:12px;
+                    text-align:center;
+                ">
+                    <div style="font-size:22px;font-weight:bold;color:#94743d;">
+                        {data['current_streak']}
+                    </div>
+                    <div style="font-size:10px;color:#7d8982;">
+                        DAY STREAK
+                    </div>
+                </td>
+
+                <td style="
+                    padding:16px;
+                    background:#fdf0f3;
+                    border-radius:12px;
+                    text-align:center;
+                ">
+                    <div style="font-size:22px;font-weight:bold;color:#a05e6b;">
+                        {data['journal_count']}
+                    </div>
+                    <div style="font-size:10px;color:#7d8982;">
+                        JOURNALS
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="
+            margin-top:20px;
+            padding:18px;
+            background:#fafcfb;
+            border:1px solid #e7eee9;
+            border-radius:14px;
+        ">
+            <div style="
+                color:#87948c;
+                font-size:10px;
+                font-weight:bold;
+                letter-spacing:.8px;
+            ">
+                MOOD PATTERN
+            </div>
+
+            <p style="
+                margin:8px 0;
+                color:#4c5e53;
+                font-size:13px;
+            ">
+                Positive: <b>{data['positive']}</b>
+                &nbsp;&nbsp;
+                Cautious: <b>{data['cautious']}</b>
+                &nbsp;&nbsp;
+                Negative: <b>{data['negative']}</b>
+            </p>
+
+            <p style="
+                margin:0;
+                color:#708078;
+                font-size:12px;
+            ">
+                Recent pattern: <b>{data['mood_pattern']}</b>
+            </p>
+        </div>
+
+        <div style="margin-top:22px;">
+            <div style="
+                color:#87948c;
+                font-size:10px;
+                font-weight:bold;
+                letter-spacing:.8px;
+            ">
+                SUGGESTED RESOURCES
+            </div>
+
+            <ul style="
+                padding-left:20px;
+                color:#53645a;
+                font-size:12px;
+                line-height:1.8;
+            ">
+                {html_recommendations}
+            </ul>
+        </div>
+
+        <div style="
+            margin-top:22px;
+            padding:16px;
+            background:#eef8f0;
+            border-radius:12px;
+            color:#5c7063;
+            font-size:12px;
+            line-height:1.6;
+        ">
+            You do not need to have a perfect week.
+            Small, consistent steps toward your wellbeing still count. 🌱
+        </div>
+
+        <p style="
+            margin-top:25px;
+            color:#9aa69f;
+            font-size:10px;
+            line-height:1.5;
+        ">
+            This is an aggregated wellbeing summary.
+            Private journal text is not included in this email.
+        </p>
+
+    </div>
+</div>
+</body>
+</html>
+"""
+
+    try:
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=body,
+            html=html_body
+        )
+
+        mail.send(msg)
+        return True
+
+    except Exception as e:
+        print(
+            f"❌ Weekly digest email error for "
+            f"{user.email}: {e}"
+        )
+        return False
+
+
+# ─────────────────────────────────────────────────────────────
+# GET DIGEST PREFERENCE
+# ─────────────────────────────────────────────────────────────
+
+@app.route('/api/weekly-digest', methods=['GET'])
+@login_required
+def get_weekly_digest_preference():
+    user_id = session['user_id']
+
+    preference = WeeklyDigestPreference.query.filter_by(
+        user_id=user_id
+    ).first()
+
+    if not preference:
+        preference = WeeklyDigestPreference(
+            user_id=user_id,
+            enabled=False
+        )
+
+        db.session.add(preference)
+        db.session.commit()
+
+    user = User.query.get(user_id)
+
+    return jsonify({
+        'enabled': bool(preference.enabled),
+        'email': user.email if user else None,
+        'last_sent_at': (
+            preference.last_sent_at.isoformat()
+            if preference.last_sent_at
+            else None
+        ),
+        'schedule': 'Every Sunday at 8:00 AM'
+    }), 200
+
+
+# ─────────────────────────────────────────────────────────────
+# UPDATE DIGEST PREFERENCE
+# ─────────────────────────────────────────────────────────────
+
+@app.route('/api/weekly-digest', methods=['PUT'])
+@login_required
+def update_weekly_digest_preference():
+    user_id = session['user_id']
+    data = request.get_json() or {}
+
+    enabled = data.get('enabled')
+
+    if not isinstance(enabled, bool):
+        return jsonify({
+            'error': 'enabled must be true or false'
+        }), 400
+
+    preference = WeeklyDigestPreference.query.filter_by(
+        user_id=user_id
+    ).first()
+
+    if not preference:
+        preference = WeeklyDigestPreference(
+            user_id=user_id,
+            enabled=enabled
+        )
+
+        db.session.add(preference)
+
+    else:
+        preference.enabled = enabled
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'enabled': bool(preference.enabled),
+        'message': (
+            'Weekly digest enabled.'
+            if preference.enabled
+            else 'Weekly digest disabled.'
+        )
+    }), 200
+
+
+# ─────────────────────────────────────────────────────────────
+# SEND A TEST DIGEST TO THE LOGGED-IN STUDENT
+# ─────────────────────────────────────────────────────────────
+
+@app.route('/api/weekly-digest/test', methods=['POST'])
+@login_required
+def send_test_weekly_digest():
+    user_id = session['user_id']
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({
+            'error': 'User not found'
+        }), 404
+
+    if not user.email:
+        return jsonify({
+            'error': 'No email address is registered for this account.'
+        }), 400
+
+    success = _send_weekly_digest_to_user(user)
+
+    if not success:
+        return jsonify({
+            'error': 'Could not send the test digest email.'
+        }), 500
+
+    return jsonify({
+        'success': True,
+        'message': (
+            f'Test weekly digest sent to {user.email}.'
+        )
+    }), 200
+
+
+# ─────────────────────────────────────────────────────────────
+# AUTOMATIC WEEKLY DIGEST JOB
+# ─────────────────────────────────────────────────────────────
+
+def send_weekly_digests():
+    """
+    Runs every Sunday at 8:00 AM Asia/Colombo.
+
+    Only students who explicitly enabled the digest receive it.
+    A safety check prevents duplicate sends if the scheduler
+    happens to run twice within the same week.
+    """
+    print("📨 Running weekly MindEase digest job...")
+
+    with app.app_context():
+
+        now_utc = datetime.utcnow()
+
+        preferences = (
+            WeeklyDigestPreference.query
+            .filter_by(enabled=True)
+            .all()
+        )
+
+        sent_count = 0
+
+        for preference in preferences:
+
+            if (
+                preference.last_sent_at
+                and (now_utc - preference.last_sent_at)
+                < timedelta(days=6)
+            ):
+                continue
+
+            user = User.query.get(
+                preference.user_id
+            )
+
+            if not user or user.role != 'student':
+                continue
+
+            if not user.email:
+                continue
+
+            if _send_weekly_digest_to_user(user):
+                preference.last_sent_at = now_utc
+                db.session.commit()
+
+                sent_count += 1
+
+        print(
+            f"📨 Weekly digest job finished. "
+            f"Emails sent: {sent_count}"
+        )
+
 
 # ── Check-In API ─────────────────────────────────────────────
 
@@ -1500,27 +2136,43 @@ def get_journals():
 @login_required
 def sentiment_data():
     user_id = session['user_id']
-    from datetime import datetime, timedelta
 
-    # Get last 7 days of journal entries
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
-    entries = (Journal.query
-               .filter(Journal.user_id == user_id,
-                       Journal.created_at >= seven_days_ago)
-               .order_by(Journal.created_at.asc())
-               .all())
+    # Allow the frontend to request a custom history period.
+    # Default remains 7 days so existing frontend functionality
+    # continues to work unchanged.
+    days = request.args.get('days', default=7, type=int)
+
+    # Keep the value sensible and prevent invalid/huge requests.
+    if days < 1:
+        days = 7
+    days = min(days, 365)
+
+    start_date = datetime.utcnow() - timedelta(days=days)
+
+    entries = (
+        Journal.query
+        .filter(
+            Journal.user_id == user_id,
+            Journal.created_at >= start_date
+        )
+        .order_by(Journal.created_at.asc())
+        .all()
+    )
 
     if not entries:
         return jsonify([]), 200
 
-    # Group by date and return one entry per day
-    # (last entry of each day wins if multiple exist)
+    # Group by date.
+    # If a student has multiple journal entries on the same day,
+    # the last entry of that day wins.
     by_date = {}
+
     for e in entries:
         d = e.created_at.strftime('%Y-%m-%d')
+
         by_date[d] = {
-            'date':       d,
-            'emotion':    e.emotion,
+            'date': d,
+            'emotion': e.emotion,
             'mood_group': e.mood_group,
         }
 
@@ -5847,9 +6499,36 @@ def admin_analytics():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all() 
+        db.create_all()
         seed_resources()
         seed_video_resources()
-        print("✅ All 7 database tables created in mindease_db")
-    app.run(debug=False, port=5000)
+        print("✅ All database tables created in mindease_db")
 
+    scheduler = BackgroundScheduler(
+        timezone='Asia/Colombo'
+    )
+
+    scheduler.add_job(
+        func=send_weekly_digests,
+        trigger=CronTrigger(
+            day_of_week='sun',
+            hour=8,
+            minute=0,
+            timezone='Asia/Colombo'
+        ),
+        id='weekly_mindease_digest',
+        replace_existing=True,
+        misfire_grace_time=3600
+    )
+
+    scheduler.start()
+
+    print(
+        "📨 Weekly email digest scheduler started "
+        "(Sunday 08:00 Asia/Colombo)"
+    )
+
+    try:
+        app.run(debug=False, port=5000)
+    finally:
+        scheduler.shutdown(wait=False)

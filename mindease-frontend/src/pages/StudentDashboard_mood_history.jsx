@@ -17,15 +17,8 @@ const [badges, setBadges] = useState([])
 const [currentUser, setCurrentUser] = useState(null)
 const [loading, setLoading] = useState(true)
 const [recommendedResources, setRecommendedResources] = useState([])
-const [moodHistory, setMoodHistory] = useState([])
 const [recommendationInfo, setRecommendationInfo] = useState(null)
-  const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false)
-  const [weeklyDigestLoading, setWeeklyDigestLoading] = useState(true)
-  const [weeklyDigestSaving, setWeeklyDigestSaving] = useState(false)
-  const [weeklyDigestTesting, setWeeklyDigestTesting] = useState(false)
-  const [weeklyDigestMessage, setWeeklyDigestMessage] = useState('')
-  const [weeklyDigestError, setWeeklyDigestError] = useState('')
-
+const [moodHistory, setMoodHistory] = useState([])
 
   useEffect(() => {
     loadDashboardData()
@@ -33,7 +26,7 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
 
   const loadDashboardData = async () => {
   try {
-    const [meRes, streakRes, latestRes, historyRes, recommendedRes, moodRes, digestRes] = await Promise.all([
+    const [meRes, streakRes, latestRes, historyRes, recommendedRes, moodRes] = await Promise.all([
       fetch(`${API}/me`, {
     credentials: 'include'
      }),
@@ -54,10 +47,6 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
       }),
 
       fetch(`${API}/sentiment-data?days=30`, {
-        credentials: 'include'
-      }),
-
-      fetch(`${API}/weekly-digest`, {
         credentials: 'include'
       })
     ])
@@ -91,95 +80,15 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
 
     if (moodRes.ok) {
       const moodData = await moodRes.json()
-      setMoodHistory(Array.isArray(moodData) ? moodData : [])
+      setMoodHistory(moodData || [])
     }
-
-    if (digestRes.ok) {
-      const digestData = await digestRes.json()
-      setWeeklyDigestEnabled(Boolean(digestData.enabled))
-    }
-
-    setWeeklyDigestLoading(false)
 
   } catch (error) {
-    setWeeklyDigestLoading(false)
     console.error('Dashboard loading error:', error)
   } finally {
     setLoading(false)
   }
 }
-
-  const updateWeeklyDigest = async (enabled) => {
-    setWeeklyDigestSaving(true)
-    setWeeklyDigestMessage('')
-    setWeeklyDigestError('')
-
-    try {
-      const response = await fetch(`${API}/weekly-digest`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ enabled })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || 'Could not update weekly digest.'
-        )
-      }
-
-      setWeeklyDigestEnabled(Boolean(data.enabled))
-
-      setWeeklyDigestMessage(
-        data.enabled
-          ? 'Weekly digest enabled.'
-          : 'Weekly digest turned off.'
-      )
-    } catch (error) {
-      console.error('Weekly digest update error:', error)
-      setWeeklyDigestError(
-        error.message || 'Could not update weekly digest.'
-      )
-    } finally {
-      setWeeklyDigestSaving(false)
-    }
-  }
-
-  const sendWeeklyDigestTest = async () => {
-    setWeeklyDigestTesting(true)
-    setWeeklyDigestMessage('')
-    setWeeklyDigestError('')
-
-    try {
-      const response = await fetch(`${API}/weekly-digest/test`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || 'Could not send test email.'
-        )
-      }
-
-      setWeeklyDigestMessage(
-        data.message || 'Test digest sent successfully.'
-      )
-    } catch (error) {
-      console.error('Weekly digest test error:', error)
-      setWeeklyDigestError(
-        error.message || 'Could not send test email.'
-      )
-    } finally {
-      setWeeklyDigestTesting(false)
-    }
-  }
 
   const getRiskText = () => {
     if (!latestCheckin) return 'Not yet assessed'
@@ -426,136 +335,10 @@ const socialPercentage = Math.min(
 
 
         {/* =========================================
-            30-DAY MOOD HISTORY
+            MOOD HISTORY — LAST 30 DAYS
         ========================================= */}
-
         <section className="dashboard-section mood-history-section">
-
           <MoodHistoryChart moodHistory={moodHistory} />
-
-        </section>
-
-
-        {/* =========================================
-            WEEKLY EMAIL DIGEST
-        ========================================= */}
-
-        <section className="dashboard-section weekly-digest-section">
-
-          <article className="weekly-digest-card">
-
-            <div className="weekly-digest-main">
-
-              <div className="weekly-digest-icon" aria-hidden="true">
-                ✉️
-              </div>
-
-              <div className="weekly-digest-copy">
-
-                <span className="panel-kicker">
-                  GENTLE WEEKLY SUPPORT
-                </span>
-
-                <h2>Weekly wellbeing digest</h2>
-
-                <p>
-                  Get a simple summary of your wellbeing activity,
-                  mood pattern, streak and helpful resources once a week.
-                </p>
-
-                <div className="weekly-digest-features">
-                  <span>✓ Check-in activity</span>
-                  <span>✓ Mood pattern</span>
-                  <span>✓ Wellness streak</span>
-                  <span>✓ Helpful resources</span>
-                </div>
-
-              </div>
-
-            </div>
-
-            <div className="weekly-digest-side">
-
-              <div className="weekly-digest-email">
-                <span>Send to</span>
-                <strong>
-                  {currentUser?.email || 'Your registered email'}
-                </strong>
-              </div>
-
-              <div className="weekly-digest-toggle-row">
-
-                <div>
-                  <strong>
-                    {weeklyDigestEnabled ? 'Digest is on' : 'Digest is off'}
-                  </strong>
-
-                  <small>
-                    Every Sunday morning
-                  </small>
-                </div>
-
-                <button
-                  type="button"
-                  className={`digest-toggle ${
-                    weeklyDigestEnabled ? 'is-on' : ''
-                  }`}
-                  onClick={() =>
-                    updateWeeklyDigest(!weeklyDigestEnabled)
-                  }
-                  disabled={
-                    weeklyDigestLoading ||
-                    weeklyDigestSaving
-                  }
-                  aria-label={
-                    weeklyDigestEnabled
-                      ? 'Turn weekly email digest off'
-                      : 'Turn weekly email digest on'
-                  }
-                  aria-pressed={weeklyDigestEnabled}
-                >
-                  <span className="digest-toggle-knob" />
-                </button>
-
-              </div>
-
-              <button
-                type="button"
-                className="weekly-digest-test"
-                onClick={sendWeeklyDigestTest}
-                disabled={
-                  weeklyDigestTesting ||
-                  weeklyDigestSaving
-                }
-              >
-                {weeklyDigestTesting
-                  ? 'Sending test email...'
-                  : 'Send a test email'}
-
-                <span>→</span>
-              </button>
-
-            </div>
-
-            {(weeklyDigestMessage || weeklyDigestError) && (
-              <div
-                className={`weekly-digest-status ${
-                  weeklyDigestError
-                    ? 'is-error'
-                    : 'is-success'
-                }`}
-                role="status"
-              >
-                <span>
-                  {weeklyDigestError ? '!' : '✓'}
-                </span>
-
-                {weeklyDigestError || weeklyDigestMessage}
-              </div>
-            )}
-
-          </article>
-
         </section>
 
 
@@ -775,8 +558,7 @@ const socialPercentage = Math.min(
                   category={(resource.category || 'WELLNESS').toUpperCase()}
                   title={resource.title}
                   description={resource.description}
-                  duration={resource.type === 'video' ? 'Watch video' : 'Read article'}
-                  isVideo={resource.type === 'video'}
+                  duration="Read"
                   onClick={() => navigate('/resources')}
                 />
               ))}
@@ -1303,478 +1085,158 @@ function WellbeingTrendChart({ checkinHistory }) {
 }
 
 function MoodHistoryChart({ moodHistory }) {
-
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Build exactly the last 30 calendar days.
   const days = Array.from({ length: 30 }, (_, index) => {
     const date = new Date(today)
     date.setDate(today.getDate() - (29 - index))
-    return date
-  })
-
-  const moodMap = new Map(
-    moodHistory.map(item => [item.date, item])
-  )
-
-  const getMoodLevel = (item) => {
-    if (!item) return null
-
-    const group = String(
-      item.mood_group ||
-      item.emotion ||
-      ''
-    ).toLowerCase()
-
-    if (
-      group.includes('positive') ||
-      group.includes('joy') ||
-      group.includes('happy') ||
-      group.includes('calm') ||
-      group.includes('good')
-    ) {
-      return 3
-    }
-
-    if (
-      group.includes('negative') ||
-      group.includes('sad') ||
-      group.includes('angry') ||
-      group.includes('fear') ||
-      group.includes('stress')
-    ) {
-      return 1
-    }
-
-    if (
-      group.includes('cautious') ||
-      group.includes('neutral') ||
-      group.includes('mixed') ||
-      group.includes('anxious')
-    ) {
-      return 2
-    }
-
-    return null
-  }
-
-  const points = days.map((date, index) => {
-
-    const dateString =
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-
-    const entry = moodMap.get(dateString)
-    const level = getMoodLevel(entry)
+    const key = date.toISOString().slice(0, 10)
+    const entry = moodHistory.find(item => item.date === key)
 
     return {
-      date: dateString,
-      dateObject: date,
-      level,
-      emotion: entry?.emotion || entry?.mood_group || '',
-      index
+      date: key,
+      mood: entry?.mood_group || null,
+      emotion: entry?.emotion || null
     }
   })
 
-  const positiveCount =
-    points.filter(point => point.level === 3).length
-
-  const cautiousCount =
-    points.filter(point => point.level === 2).length
-
-  const negativeCount =
-    points.filter(point => point.level === 1).length
-
-  const recordedCount =
-    positiveCount +
-    cautiousCount +
-    negativeCount
-
-  const chartWidth = 900
-  const chartHeight = 300
-
-  const paddingLeft = 58
-  const paddingRight = 22
-  const paddingTop = 30
-  const paddingBottom = 48
-
-  const graphWidth =
-    chartWidth -
-    paddingLeft -
-    paddingRight
-
-  const graphHeight =
-    chartHeight -
-    paddingTop -
-    paddingBottom
-
-  const getX = (index) =>
-    paddingLeft +
-    (index / 29) *
-    graphWidth
-
-  const getY = (level) =>
-    paddingTop +
-    ((3 - level) / 2) *
-    graphHeight
-
-  const moodLabel = (level) => {
-    if (level === 3) return 'Positive'
-    if (level === 2) return 'Cautious'
-    if (level === 1) return 'Negative'
-    return ''
+  const moodMeta = {
+    Positive: { y: 42, label: 'Positive', emoji: '😊', className: 'mood-positive' },
+    Cautious: { y: 110, label: 'Cautious', emoji: '😐', className: 'mood-cautious' },
+    Negative: { y: 178, label: 'Negative', emoji: '😔', className: 'mood-negative' }
   }
 
-  const moodClass = (level) => {
-    if (level === 3) return 'mood-positive'
-    if (level === 2) return 'mood-cautious'
-    if (level === 1) return 'mood-negative'
-    return ''
-  }
+  const points = days
+    .map((day, index) => {
+      if (!day.mood || !moodMeta[day.mood]) return null
+      const x = 62 + (index / 29) * 616
+      return {
+        ...day,
+        x,
+        y: moodMeta[day.mood].y,
+        meta: moodMeta[day.mood]
+      }
+    })
+    .filter(Boolean)
 
-  // Create a separate line segment for each consecutive pair
-  // of days that both contain mood data.
-  const lineSegments = []
+  const counts = days.reduce((acc, day) => {
+    if (day.mood && acc[day.mood] !== undefined) acc[day.mood] += 1
+    return acc
+  }, { Positive: 0, Cautious: 0, Negative: 0 })
 
-  for (let i = 1; i < points.length; i++) {
-    const previous = points[i - 1]
-    const current = points[i]
+  const moodLine = points.length > 1
+    ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+    : ''
 
-    if (
-      previous.level !== null &&
-      current.level !== null
-    ) {
-      lineSegments.push({
-        x1: getX(previous.index),
-        y1: getY(previous.level),
-        x2: getX(current.index),
-        y2: getY(current.level),
-        id: `${previous.date}-${current.date}`
-      })
-    }
-  }
-
-  const firstRecorded =
-    points.find(point => point.level !== null)
-
-  const lastRecorded =
-    [...points]
-      .reverse()
-      .find(point => point.level !== null)
-
-  let summaryText =
-    'Your mood history will appear here as you add journal entries.'
-
-  if (recordedCount === 1) {
-    summaryText =
-      'One day of mood data recorded. Keep journaling gently 🌱'
-  } else if (recordedCount > 1) {
-    if (
-      firstRecorded &&
-      lastRecorded &&
-      lastRecorded.level > firstRecorded.level
-    ) {
-      summaryText =
-        'Your recent mood pattern is looking more positive 🌿'
-    } else if (
-      firstRecorded &&
-      lastRecorded &&
-      lastRecorded.level < firstRecorded.level
-    ) {
-      summaryText =
-        'Your recent mood pattern has been more difficult. Be gentle with yourself 💛'
-    } else {
-      summaryText =
-        'Your mood has been fairly steady across the recorded days 🌸'
-    }
-  }
+  const formatDate = (value) => new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  })
 
   return (
     <article className="dashboard-panel mood-history-panel">
-
       <div className="panel-heading">
-
         <div>
-          <span className="panel-kicker">
-            YOUR MOOD
-          </span>
-
-          <h2>
-            Mood history · Last 30 days
-          </h2>
+          <span className="panel-kicker">YOUR MOOD</span>
+          <h2>Mood history · Last 30 days</h2>
         </div>
 
         <button
           className="panel-action"
           type="button"
-          onClick={() => {
-            window.location.href = '/journal'
-          }}
+          onClick={() => window.location.href = '/weekly-sentiment'}
         >
-          Journal →
+          View insights →
         </button>
-
       </div>
 
-
-      <div className="mood-history-chart">
-
-        {recordedCount === 0 ? (
-
+      <div className="mood-history-chart-wrap">
+        {points.length === 0 ? (
           <div className="mood-history-empty">
-
-            <div className="mood-history-empty-icon">
-              🌷
-            </div>
-
-            <h3>
-              Your mood story starts here
-            </h3>
-
-            <p>
-              Write a journal entry and MindEase will
-              start building your 30-day mood history.
-            </p>
-
-            <button
-              type="button"
-              className="mood-history-empty-button"
-              onClick={() => {
-                window.location.href = '/journal'
-              }}
-            >
-              Write a journal →
-            </button>
-
+            <div className="chart-empty-icon">🌱</div>
+            <h3>Your mood history starts here</h3>
+            <p>Write a journal entry to see your mood pattern over the last 30 days.</p>
           </div>
-
         ) : (
+          <svg
+            viewBox="0 0 720 220"
+            preserveAspectRatio="none"
+            className="mood-history-svg"
+            role="img"
+            aria-label="Mood history for the last 30 days"
+          >
+            {[42, 110, 178].map(y => (
+              <line
+                key={y}
+                x1="62"
+                x2="690"
+                y1={y}
+                y2={y}
+                className="mood-history-grid"
+              />
+            ))}
 
-          <div className="mood-history-svg-wrapper">
+            <text x="0" y="47" className="mood-history-axis-label">Positive</text>
+            <text x="0" y="115" className="mood-history-axis-label">Cautious</text>
+            <text x="0" y="183" className="mood-history-axis-label">Negative</text>
 
-            <svg
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-              preserveAspectRatio="none"
-              className="mood-history-svg"
-              role="img"
-              aria-label="Mood history for the last 30 days"
-            >
+            {points.length > 1 && (
+              <path d={moodLine} className="mood-history-line" />
+            )}
 
-              {/* Horizontal guide lines */}
-
-              {[3, 2, 1].map(level => {
-
-                const y = getY(level)
-
-                return (
-                  <line
-                    key={`mood-grid-${level}`}
-                    x1={paddingLeft}
-                    x2={chartWidth - paddingRight}
-                    y1={y}
-                    y2={y}
-                    className="mood-history-grid-line"
-                  />
-                )
-
-              })}
-
-
-              {/* Mood labels */}
-
-              <text
-                x="5"
-                y={getY(3) + 5}
-                className="mood-history-axis-label"
-              >
-                Positive
-              </text>
-
-              <text
-                x="5"
-                y={getY(2) + 5}
-                className="mood-history-axis-label"
-              >
-                Cautious
-              </text>
-
-              <text
-                x="5"
-                y={getY(1) + 5}
-                className="mood-history-axis-label"
-              >
-                Negative
-              </text>
-
-
-              {/* Connecting lines */}
-
-              {lineSegments.map(segment => (
-                <line
-                  key={segment.id}
-                  x1={segment.x1}
-                  y1={segment.y1}
-                  x2={segment.x2}
-                  y2={segment.y2}
-                  className="mood-history-line"
+            {points.map(point => (
+              <g key={point.date}>
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="8"
+                  className={`mood-history-point-halo ${point.meta.className}`}
                 />
-              ))}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="4"
+                  className={`mood-history-point ${point.meta.className}`}
+                />
+                <title>
+                  {formatDate(point.date)} · {point.mood}{point.emotion ? ` · ${point.emotion}` : ''}
+                </title>
+              </g>
+            ))}
 
-
-              {/* Mood points */}
-
-              {points.map(point => {
-
-                if (point.level === null) {
-                  return null
-                }
-
-                return (
-                  <g
-                    key={point.date}
-                    className={`mood-history-point-group ${moodClass(point.level)}`}
-                  >
-
-                    <circle
-                      cx={getX(point.index)}
-                      cy={getY(point.level)}
-                      r="8"
-                      className="mood-history-point-halo"
-                    />
-
-                    <circle
-                      cx={getX(point.index)}
-                      cy={getY(point.level)}
-                      r="4.5"
-                      className="mood-history-point"
-                    />
-
-                    <title>
-                      {point.date} · {moodLabel(point.level)}
-                      {point.emotion
-                        ? ` · ${point.emotion}`
-                        : ''}
-                    </title>
-
-                  </g>
-                )
-
-              })}
-
-
-              {/* Date labels — show every 5th day to keep it readable */}
-
-              {points.map((point, index) => {
-
-                if (
-                  index !== 0 &&
-                  index !== 4 &&
-                  index !== 9 &&
-                  index !== 14 &&
-                  index !== 19 &&
-                  index !== 24 &&
-                  index !== 29
-                ) {
-                  return null
-                }
-
-                return (
-                  <text
-                    key={`mood-date-${point.date}`}
-                    x={getX(point.index)}
-                    y={chartHeight - 14}
-                    textAnchor="middle"
-                    className="mood-history-date-label"
-                  >
-                    {point.dateObject.toLocaleDateString(
-                      'en-US',
-                      {
-                        month: 'short',
-                        day: 'numeric'
-                      }
-                    )}
-                  </text>
-                )
-
-              })}
-
-            </svg>
-
-          </div>
-
+            {[0, 7, 14, 21, 29].map(index => (
+              <text
+                key={index}
+                x={62 + (index / 29) * 616}
+                y="214"
+                textAnchor="middle"
+                className="mood-history-date-label"
+              >
+                {new Date(`${days[index].date}T00:00:00`).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </text>
+            ))}
+          </svg>
         )}
-
       </div>
 
-<br></br><br></br>
       <div className="mood-history-footer">
+        <div className="mood-history-legend">
+          <span><i className="mood-dot mood-positive" /> Positive <strong>{counts.Positive}</strong></span>
+          <span><i className="mood-dot mood-cautious" /> Cautious <strong>{counts.Cautious}</strong></span>
+          <span><i className="mood-dot mood-negative" /> Negative <strong>{counts.Negative}</strong></span>
+        </div>
 
-        <div className="mood-history-counts">
-
-  <div className="mood-count mood-count-positive">
-    <span className="mood-count-dot"></span>
-
-    <span className="mood-count-label">
-      Positive
-    </span>
-
-    <strong>
-      {positiveCount}
-    </strong>
-  </div>
-
-
-  <div className="mood-count mood-count-cautious">
-    <span className="mood-count-dot"></span>
-
-    <span className="mood-count-label">
-      Cautious
-    </span>
-
-    <strong>
-      {cautiousCount}
-    </strong>
-  </div>
-
-
-  <div className="mood-count mood-count-negative">
-    <span className="mood-count-dot"></span>
-
-    <span className="mood-count-label">
-      Negative
-    </span>
-
-    <strong>
-      {negativeCount}
-    </strong>
-  </div>
-
-</div>
-
-        <div className="mood-history-insight">
-
-  <div className="mood-history-insight-icon">
-    🌿
-  </div>
-
-  <div>
-    <span className="mood-history-insight-label">
-      Recent mood pattern
-    </span>
-
-    <span className="mood-history-insight-text">
-      {summaryText}
-    </span>
-  </div>
-
-</div>
-
+        <span className="mood-history-count">
+          {points.length} {points.length === 1 ? 'day' : 'days'} with journal mood data
+        </span>
       </div>
-
     </article>
   )
 }
-
 
 function ResourceCard({
   icon,
@@ -1782,7 +1244,6 @@ function ResourceCard({
   title,
   description,
   duration,
-  isVideo = false,
   onClick
 }) {
   return (
@@ -1807,14 +1268,14 @@ function ResourceCard({
 
         <button
           className="resource-play"
-          aria-label={isVideo ? `Watch ${title}` : `Open ${title}`}
+          aria-label={`Open ${title}`}
           type="button"
           onClick={(event) => {
             event.stopPropagation()
             onClick?.()
           }}
         >
-          {isVideo ? '▶' : '→'}
+          →
         </button>
 
       </div>
