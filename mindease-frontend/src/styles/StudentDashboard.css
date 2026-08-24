@@ -1,1521 +1,990 @@
-/* ============================================================
-   MINDEASE STUDENT DASHBOARD
-   Clean / Calm / Professional
-============================================================ */
-
-
-/* ============================================================
-   PAGE
-============================================================ */
+/* ================================================================
+   STUDENT DASHBOARD
+   MindEase — polished student wellbeing dashboard
+================================================================ */
 
 .student-dashboard {
-  width: 100%;
-  min-height: 100%;
-
-  color: var(--student-text);
+  min-height: 100vh;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(223,243,228,.38), transparent 23%),
+    #fbfcfb;
+  color: #35433b;
 }
 
+.student-dashboard *,
+.student-dashboard *::before,
+.student-dashboard *::after {
+  box-sizing: border-box;
+}
 
-/* ============================================================
+.student-main {
+  width: 100%;
+  max-width: 1540px;
+  min-height: 100vh;
+  margin-left: 250px;
+  padding: 34px 42px 82px;
+}
+
+/* ================================================================
+   SHARED TOKENS
+================================================================ */
+
+.student-dashboard {
+  --dash-ink: #30463a;
+  --dash-text: #536159;
+  --dash-muted: #8b9790;
+  --dash-line: #e5ece7;
+  --dash-panel: #ffffff;
+  --dash-green: #78aa8a;
+  --dash-green-dark: #527861;
+  --dash-soft: #f6f9f7;
+  --dash-radius: 20px;
+  --dash-shadow: 0 9px 28px rgba(54, 78, 63, .045);
+  --dash-shadow-hover: 0 15px 34px rgba(54, 78, 63, .08);
+}
+
+/* ================================================================
    HEADER
-============================================================ */
+================================================================ */
 
 .dashboard-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-
   gap: 30px;
-
-  margin-bottom: 26px;
+  margin-bottom: 27px;
 }
-
 
 .dashboard-date {
-  margin-bottom: 6px;
-
-  color: var(--student-muted);
-
-  font-size: 11px;
-
-  font-weight: 650;
-
-  letter-spacing: 0.25px;
+  margin-bottom: 8px;
+  color: #9aa69f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .35px;
 }
-
 
 .dashboard-header h1 {
   margin: 0;
-
-  color: var(--student-text-dark);
-
-  font-size:
-    clamp(26px, 3vw, 34px);
-
-  font-weight: 750;
-
-  line-height: 1.18;
-
-  letter-spacing: -0.9px;
+  color: var(--dash-ink);
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.12;
+  letter-spacing: -1.15px;
+  font-weight: 720;
 }
-
 
 .dashboard-header h1 span {
-  font-size: 25px;
+  font-size: .72em;
 }
-
 
 .dashboard-header p {
-  margin: 8px 0 0;
-
-  color: #849189;
-
-  font-size: 13px;
-
-  line-height: 1.6;
+  margin: 9px 0 0;
+  color: #89958e;
+  font-size: 12px;
+  line-height: 1.55;
 }
-
-
-/* ============================================================
-   HEADER ACTIONS
-============================================================ */
 
 .dashboard-header-actions {
   display: flex;
   align-items: center;
-
   gap: 9px;
 }
-
 
 .header-icon-button,
 .profile-mini {
-  border:
-    1px solid var(--student-border);
-
-  background: #FFFFFF;
-
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e4ebe6;
+  background: #ffffff;
   cursor: pointer;
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
+  box-shadow: 0 5px 15px rgba(54, 78, 63, .035);
 }
-
 
 .header-icon-button {
-  width: 40px;
-  height: 40px;
-
-  border-radius: 12px;
-
-  color: #7E8B84;
-
+  border-radius: 13px;
+  color: #7c8b82;
   font-size: 17px;
+  transition: transform .16s ease, border-color .16s ease;
 }
 
-
-.header-icon-button:hover,
-.profile-mini:hover {
+.header-icon-button:hover {
   transform: translateY(-1px);
-
-  border-color: #D8E5DC;
-
-  box-shadow: var(--shadow-sm);
+  border-color: #cad9ce;
 }
-
 
 .profile-mini {
-  width: 40px;
-  height: 40px;
-
   border-radius: 50%;
-
-  background: #EEE8FF;
-
-  color: #78659B;
-
-  font-weight: 700;
+  background: #fce4ec;
+  color: #97556b;
+  font-weight: 750;
 }
 
-
-/* ============================================================
+/* ================================================================
    SUMMARY CARDS
-============================================================ */
+================================================================ */
 
 .summary-grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
-  gap: 16px;
-
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
   margin-bottom: 20px;
 }
 
-
 .summary-card {
   position: relative;
-
-  min-height: 142px;
-
-  padding: 21px;
-
+  min-height: 146px;
   overflow: hidden;
-
-  border:
-    1px solid rgba(80, 100, 87, 0.08);
-
-  border-radius: 18px;
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  padding: 20px;
+  border: 1px solid rgba(70, 91, 77, .09);
+  border-radius: var(--dash-radius);
+  box-shadow: 0 6px 20px rgba(55, 78, 63, .025);
+  transition: transform .18s ease, box-shadow .18s ease;
 }
-
 
 .summary-card::after {
-  content: '';
-
+  content: "";
   position: absolute;
-
-  width: 90px;
-  height: 90px;
-
-  right: -30px;
-  bottom: -35px;
-
+  width: 105px;
+  height: 105px;
+  right: -38px;
+  bottom: -58px;
   border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.28);
+  background: rgba(255,255,255,.28);
 }
-
 
 .summary-card:hover {
   transform: translateY(-2px);
-
-  box-shadow:
-    0 9px 25px rgba(55, 75, 61, 0.07);
+  box-shadow: var(--dash-shadow);
 }
-
 
 .summary-yellow {
-  background: #FFF4C2;
+  background: #fff4c2;
 }
-
 
 .summary-green {
-  background: #DFF3E4;
+  background: #dff3e4;
 }
-
 
 .summary-pink {
-  background: #FCE4EC;
+  background: #fce4ec;
 }
 
-
 .summary-card-top {
-  position: relative;
-  z-index: 1;
-
   display: flex;
   align-items: center;
-
   gap: 9px;
 }
 
-
 .summary-icon {
-  width: 35px;
-  height: 35px;
-
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  background:
-    rgba(255, 255, 255, 0.68);
-
-  border-radius: 10px;
-
-  font-size: 16px;
-
-  box-shadow:
-    0 3px 9px rgba(70, 90, 76, 0.035);
+  border: 1px solid rgba(255,255,255,.55);
+  border-radius: 11px;
+  background: rgba(255,255,255,.66);
+  font-size: 15px;
 }
-
 
 .summary-label {
-  color: #66736B;
-
-  font-size: 9px;
-
-  font-weight: 750;
-
-  letter-spacing: 1px;
+  color: #69776f;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 1.05px;
 }
-
 
 .summary-value {
   position: relative;
   z-index: 1;
-
-  margin-top: 16px;
-
-  color: #33483A;
-
+  margin-top: 18px;
+  color: #33483a;
   font-size: 28px;
-
-  font-weight: 750;
-
   line-height: 1;
+  font-weight: 720;
+  letter-spacing: -.8px;
 }
-
 
 .summary-value span {
   margin-left: 5px;
-
-  color: #79867E;
-
-  font-size: 12px;
-
-  font-weight: 500;
+  color: #7b8881;
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0;
 }
-
 
 .summary-footer {
   position: relative;
   z-index: 1;
-
-  margin-top: 9px;
-
-  color: #7D8982;
-
-  font-size: 10.5px;
+  margin-top: 7px;
+  color: #7d8982;
+  font-size: 10px;
+  line-height: 1.4;
 }
 
+.risk-low { color: #477b57; }
+.risk-medium { color: #8a7242; }
+.risk-high { color: #a65d6e; }
+.risk-neutral { color: #66736b; }
 
-.risk-low {
-  color: #477B57;
-}
-
-
-.risk-medium {
-  color: #8A7242;
-}
-
-
-.risk-high {
-  color: #A65D6E;
-}
-
-
-.risk-neutral {
-  color: #66736B;
-}
-
-
-/* ============================================================
-   TWO COLUMN
-============================================================ */
+/* ================================================================
+   TWO-COLUMN LAYOUT
+================================================================ */
 
 .dashboard-two-column {
   display: grid;
-
-  grid-template-columns:
-    minmax(0, 1.65fr)
-    minmax(300px, 0.85fr);
-
+  grid-template-columns: minmax(0, 1.72fr) minmax(290px, .88fr);
   gap: 18px;
-
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
+.dashboard-two-column > * {
+  min-width: 0;
+}
 
-/* ============================================================
-   DASHBOARD PANEL
-============================================================ */
+/* ================================================================
+   STANDARD PANELS
+================================================================ */
 
 .dashboard-panel {
-  background: #FFFFFF;
-
-  border:
-    1px solid var(--student-border);
-
-  border-radius: 18px;
-
+  min-width: 0;
   padding: 22px;
-
-  box-shadow:
-    var(--shadow-sm);
+  border: 1px solid var(--dash-line);
+  border-radius: var(--dash-radius);
+  background: var(--dash-panel);
+  box-shadow: var(--dash-shadow);
 }
-
 
 .panel-heading {
   display: flex;
-
   align-items: flex-start;
-
   justify-content: space-between;
-
-  gap: 16px;
-
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 18px;
 }
-
 
 .panel-kicker {
   display: block;
-
-  margin-bottom: 5px;
-
-  color: #9AA59F;
-
+  margin-bottom: 6px;
+  color: #9aa59f;
   font-size: 8.5px;
-
-  font-weight: 750;
-
-  letter-spacing: 1.2px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 1.15px;
 }
-
 
 .panel-heading h2,
 .section-heading h2 {
   margin: 0;
-
-  color: #34463B;
-
+  color: #3b4d42;
   font-size: 17px;
-
-  font-weight: 700;
-
-  letter-spacing: -0.25px;
+  line-height: 1.25;
+  font-weight: 680;
+  letter-spacing: -.3px;
 }
-
-
-.small-status {
-  color: #A1AAA5;
-
-  font-size: 9px;
-
-  white-space: nowrap;
-}
-
 
 .panel-action {
-  border: none;
-
+  flex: 0 0 auto;
+  padding: 4px 0;
+  border: 0;
   background: transparent;
-
-  color: #62866D;
-
+  color: #668b72;
   font-family: inherit;
-
   font-size: 10.5px;
-
-  font-weight: 650;
-
+  font-weight: 700;
   cursor: pointer;
-
   white-space: nowrap;
-
-  transition: color 0.15s ease;
 }
-
 
 .panel-action:hover {
-  color: var(--student-green-dark);
+  color: #4f765d;
 }
 
-
-/* ============================================================
+/* ================================================================
    WELLBEING CHART
-============================================================ */
+================================================================ */
 
 .wellbeing-chart {
-  width: 100%;
-
-  min-height: 300px;
-
-  margin-top: 8px;
-
   position: relative;
+  width: 100%;
+  min-height: 310px;
+  margin-top: 8px;
 }
-
 
 .chart-svg-wrapper {
   width: 100%;
-
-  height: 300px;
-
+  height: 310px;
   overflow: hidden;
+  border-radius: 13px;
 }
-
 
 .wellbeing-svg {
+  display: block;
   width: 100%;
   height: 100%;
-
-  display: block;
 }
 
-
 .chart-grid-line {
-  stroke: #E8EEEA;
-
+  stroke: #e9efeb;
   stroke-width: 1;
-
   stroke-dasharray: 4 5;
 }
 
-
 .chart-area {
-  fill:
-    rgba(223, 243, 228, 0.55);
+  fill: rgba(223, 243, 228, .56);
 }
-
 
 .chart-main-line {
   fill: none;
-
-  stroke: #78AA8A;
-
-  stroke-width: 3.5;
-
+  stroke: #78aa8a;
+  stroke-width: 4;
   stroke-linecap: round;
-
   stroke-linejoin: round;
 }
 
-
 .chart-point-halo {
-  fill:
-    rgba(120, 170, 138, 0.16);
+  fill: rgba(120, 170, 138, .18);
 }
 
-
 .chart-point {
-  fill: #FFFFFF;
-
-  stroke: #78AA8A;
-
+  fill: #ffffff;
+  stroke: #78aa8a;
   stroke-width: 3;
 }
 
-
 .chart-axis-label {
-  fill: #8A9A92;
-
-  font-size: 11px;
-
+  fill: #8a9a92;
+  font-size: 12px;
   font-family: inherit;
 }
-
 
 .chart-date-label {
-  fill: #7F8F88;
-
-  font-size: 11px;
-
+  fill: #7f8f88;
+  font-size: 12px;
   font-family: inherit;
 }
 
-
-/* ============================================================
-   EMPTY CHART
-============================================================ */
-
 .chart-empty-state {
-  min-height: 270px;
-
+  min-height: 280px;
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
   justify-content: center;
-
   padding: 30px;
-
   text-align: center;
 }
-
 
 .chart-empty-icon {
   width: 58px;
   height: 58px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   margin-bottom: 14px;
-
-  background: #DFF3E4;
-
   border-radius: 18px;
-
+  background: #dff3e4;
   font-size: 26px;
 }
 
-
 .chart-empty-state h3 {
   margin: 0 0 7px;
-
   color: #315444;
-
   font-size: 18px;
 }
 
-
 .chart-empty-state p {
   max-width: 300px;
-
   margin: 0;
-
   color: #819089;
-
   font-size: 13px;
-
   line-height: 1.6;
 }
 
-
-/* ============================================================
-   CHART NOTE
-============================================================ */
-
 .chart-note {
-  min-height: 48px;
-
+  min-height: 46px;
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   gap: 15px;
-
-  margin-top: 8px;
-
-  padding:
-    12px
-    16px;
-
-  background: #F7FAF8;
-
-  border:
-    1px solid #EDF2EE;
-
+  margin-top: 9px;
+  padding: 12px 15px;
+  border: 1px solid #edf2ee;
   border-radius: 12px;
-
-  color: #71817A;
-
+  background: #f8fbf8;
+  color: #71817a;
   font-size: 11px;
+  line-height: 1.4;
 }
 
-
 .chart-count {
-  color: #5E7568;
-
-  font-weight: 650;
-
+  color: #5e7568;
+  font-weight: 700;
   white-space: nowrap;
 }
 
-
-/* ============================================================
-   CALENDAR
-============================================================ */
+/* ================================================================
+   MINI CALENDAR
+================================================================ */
 
 .calendar-controls {
   display: flex;
-
   gap: 4px;
 }
 
-
 .calendar-controls button {
-  width: 28px;
-  height: 28px;
-
-  border:
-    1px solid var(--student-border);
-
-  background: #FFFFFF;
-
+  width: 27px;
+  height: 27px;
+  border: 1px solid #e3ebe6;
   border-radius: 8px;
-
-  color: #77847C;
-
+  background: #ffffff;
+  color: #77847c;
   cursor: pointer;
-
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
+  transition: background .15s ease, border-color .15s ease;
 }
-
 
 .calendar-controls button:hover {
-  background: #F5F9F6;
-
-  border-color: #D6E3D9;
+  border-color: #cbdacf;
+  background: #f7faf8;
 }
-
 
 .calendar-weekdays,
 .calendar-grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(7, 1fr);
-
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
 }
 
-
 .calendar-weekdays {
   margin-bottom: 7px;
-
-  color: #A1AAA5;
-
-  font-size: 9px;
-
-  font-weight: 600;
-
+  color: #a1aaa5;
+  font-size: 8.5px;
   text-align: center;
 }
 
-
 .calendar-grid {
-  row-gap: 5px;
+  row-gap: 4px;
 }
-
 
 .calendar-day {
   position: relative;
-
-  min-height: 48px;
-
+  min-height: 46px;
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
-  border-radius: 12px;
-
-  color: #69766E;
-
-  font-size: 11px;
-
-  transition:
-    background 0.15s ease,
-    transform 0.15s ease;
+  border-radius: 11px;
+  color: #69766e;
+  font-size: 10px;
+  transition: background .15s ease, transform .15s ease;
 }
-
 
 .calendar-day:not(.empty):hover {
-  background: #F5F9F6;
-
-  transform: translateY(-1px);
+  background: #f5f9f6;
 }
-
-
-.calendar-day.empty {
-  pointer-events: none;
-}
-
-
-.calendar-day-number {
-  position: relative;
-
-  z-index: 2;
-}
-
 
 .calendar-day.today {
-  background: #DFF3E4;
-
-  color: #315B42;
-
+  background: #dff3e4;
+  color: #315b46;
   font-weight: 750;
 }
-
 
 .calendar-day.activity-day {
   cursor: pointer;
 }
 
-
 .calendar-activity-dot {
   position: absolute;
-
-  bottom: 6px;
+  bottom: 7px;
   left: 50%;
-
   width: 5px;
   height: 5px;
-
   transform: translateX(-50%);
-
   border-radius: 50%;
 }
 
-
-.calendar-activity-dot.checkin-dot {
-  background: #78AA8A;
+.calendar-day.empty {
+  pointer-events: none;
 }
-
 
 .calendar-legend {
   display: flex;
-
   align-items: center;
-
   gap: 18px;
-
   margin-top: 16px;
 }
 
-
 .calendar-legend span {
   display: flex;
-
   align-items: center;
-
-  gap: 6px;
-
-  color: #71817A;
-
-  font-size: 10px;
+  gap: 7px;
+  color: #71817a;
+  font-size: 9.5px;
 }
-
 
 .legend-dot {
   width: 7px;
   height: 7px;
-
   display: inline-block;
-
   border-radius: 50%;
 }
 
-
+.calendar-activity-dot.checkin-dot,
 .legend-dot.checkin-dot {
-  background: #78AA8A;
+  background: #78aa8a;
 }
 
-
+.calendar-activity-dot.selfcare-dot,
 .legend-dot.selfcare-dot {
-  background: #E8A5BB;
+  background: #e8a5bb;
 }
 
-
-/* ============================================================
-   SECTIONS
-============================================================ */
+/* ================================================================
+   SECTION HEADINGS
+================================================================ */
 
 .dashboard-section {
-  margin-bottom: 22px;
+  margin-bottom: 27px;
 }
-
 
 .section-heading {
   display: flex;
-
-  align-items: center;
-
+  align-items: flex-end;
   justify-content: space-between;
-
   gap: 15px;
-
-  margin-bottom: 12px;
+  margin-bottom: 13px;
 }
 
-
-/* ============================================================
-   QUICK ACTIONS
-============================================================ */
+/* ================================================================
+   QUICK ACTION CARDS
+================================================================ */
 
 .quick-actions {
   display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 11px;
 }
 
-
 .quick-action {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
+  position: relative;
+  min-width: 0;
   min-height: 78px;
-
-  padding: 12px;
-
-  border:
-    1px solid rgba(80, 100, 87, 0.08);
-
-  border-radius: 14px;
-
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  border: 1px solid rgba(74, 95, 81, .08);
+  border-radius: 15px;
   font-family: inherit;
-
   text-align: left;
-
   cursor: pointer;
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
-
 
 .quick-action:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 8px 20px rgba(70, 90, 76, 0.07);
+  transform: translateY(-3px);
+  border-color: rgba(83, 111, 91, .14);
+  box-shadow: var(--dash-shadow);
 }
 
-
 .quick-action > span {
-  width: 36px;
-  height: 36px;
-
-  flex-shrink: 0;
-
+  width: 37px;
+  height: 37px;
   display: flex;
-
+  flex: 0 0 37px;
   align-items: center;
-
   justify-content: center;
-
-  background:
-    rgba(255, 255, 255, 0.68);
-
-  border-radius: 10px;
-
+  border: 1px solid rgba(255,255,255,.62);
+  border-radius: 11px;
+  background: rgba(255,255,255,.68);
   font-size: 16px;
 }
 
-
 .quick-action div {
-  flex: 1;
-
   min-width: 0;
-
+  flex: 1;
   display: flex;
-
   flex-direction: column;
 }
 
-
 .quick-action strong {
-  color: #3E4D44;
-
+  overflow: hidden;
+  color: #3e4d44;
   font-size: 11px;
+  line-height: 1.3;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
 
 .quick-action small {
-  margin-top: 3px;
-
-  color: #89948D;
-
+  margin-top: 4px;
+  overflow: hidden;
+  color: #89948d;
   font-size: 8.5px;
-
-  line-height: 1.4;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
 
 .quick-action b {
   color: #829087;
-
   font-size: 14px;
+  font-weight: 650;
 }
 
+.quick-yellow { background: #fff4c2; }
+.quick-pink { background: #fce4ec; }
+.quick-green { background: #dff3e4; }
+.quick-neutral { background: #f4f7f5; }
 
-.quick-yellow {
-  background: #FFF4C2;
-}
-
-
-.quick-pink {
-  background: #FCE4EC;
-}
-
-
-.quick-green {
-  background: #DFF3E4;
-}
-
-
-.quick-neutral {
-  background: #F4F7F5;
-}
-
-
-/* ============================================================
-   INDICATORS
-============================================================ */
+/* ================================================================
+   WELLBEING INDICATORS
+================================================================ */
 
 .indicators-section {
-  margin-bottom: 22px;
+  margin-bottom: 27px;
 }
-
 
 .indicator-list {
   display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap:
-    18px
-    24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 26px;
 }
-
 
 .indicator-heading {
   display: flex;
-
-  justify-content: space-between;
-
   align-items: center;
-
-  margin-bottom: 7px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
-
 
 .indicator-name {
   display: flex;
-
   align-items: center;
-
-  gap: 6px;
-
-  color: #65736A;
-
-  font-size: 10.5px;
-}
-
-
-.indicator-name span {
-  font-size: 14px;
-}
-
-
-.indicator-heading strong {
-  color: #4B5F52;
-
+  gap: 7px;
+  min-width: 0;
+  color: #65736a;
   font-size: 10px;
 }
 
-
-.indicator-track {
-  height: 8px;
-
-  overflow: hidden;
-
-  background: #EEF3EF;
-
-  border-radius: 10px;
+.indicator-name span {
+  font-size: 13px;
 }
 
+.indicator-heading strong {
+  color: #4b5f52;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.indicator-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef3ef;
+}
 
 .indicator-progress {
   height: 100%;
-
-  background:
-    linear-gradient(
-      90deg,
-      #82A98D,
-      #A8C8AE
-    );
-
   border-radius: inherit;
-
-  transition:
-    width 0.4s ease;
+  background: #87ae92;
+  transition: width .35s ease;
 }
-
 
 .indicator-inverse {
-  background:
-    linear-gradient(
-      90deg,
-      #D0B16D,
-      #E2CB91
-    );
+  background: #d8b978;
 }
 
+.small-status {
+  color: #a1aaa5;
+  font-size: 8.5px;
+}
 
-/* ============================================================
-   REMINDER
-============================================================ */
+/* ================================================================
+   REMINDER CARD
+================================================================ */
 
 .reminder-panel {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
   padding: 24px;
-
+  border: 1px solid #f1dce4;
+  border-radius: var(--dash-radius);
   background:
-    linear-gradient(
-      145deg,
-      #FCE4EC,
-      #F9EDF1
-    );
-
-  border:
-    1px solid #F2DDE4;
-
-  border-radius: 18px;
+    radial-gradient(circle at 92% 15%, rgba(255,255,255,.48), transparent 28%),
+    #fce4ec;
 }
 
+.reminder-panel::after {
+  content: "";
+  position: absolute;
+  width: 145px;
+  height: 145px;
+  right: -62px;
+  bottom: -82px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.22);
+}
 
 .reminder-icon {
   width: 40px;
   height: 40px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   margin-bottom: 15px;
-
-  background:
-    rgba(255, 255, 255, 0.72);
-
-  border-radius: 11px;
-
-  font-size: 18px;
+  border: 1px solid rgba(255,255,255,.60);
+  border-radius: 12px;
+  background: rgba(255,255,255,.66);
+  font-size: 17px;
 }
-
 
 .reminder-panel h2 {
-  max-width: 370px;
-
+  position: relative;
+  z-index: 1;
+  max-width: 360px;
   margin: 0;
-
   color: #664754;
-
-  font-size: 19px;
-
-  font-weight: 700;
-
+  font-size: 18px;
   line-height: 1.4;
+  letter-spacing: -.2px;
 }
-
 
 .reminder-panel p {
+  position: relative;
+  z-index: 1;
   max-width: 410px;
-
-  margin:
-    10px
-    0
-    17px;
-
-  color: #8B6B76;
-
-  font-size: 11px;
-
-  line-height: 1.7;
+  margin: 10px 0 17px;
+  color: #8b6b76;
+  font-size: 10.5px;
+  line-height: 1.65;
 }
-
 
 .reminder-panel button {
-  padding:
-    9px
-    14px;
-
-  border:
-    1px solid rgba(155, 88, 110, 0.12);
-
-  background:
-    rgba(255, 255, 255, 0.68);
-
-  border-radius: 9px;
-
-  color: #8C596B;
-
+  position: relative;
+  z-index: 1;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgba(155,88,110,.13);
+  border-radius: 10px;
+  background: rgba(255,255,255,.68);
+  color: #8c596b;
   font-family: inherit;
-
-  font-size: 10px;
-
-  font-weight: 650;
-
+  font-size: 9.5px;
+  font-weight: 700;
   cursor: pointer;
-
-  transition:
-    background 0.18s ease,
-    transform 0.18s ease;
+  transition: background .16s ease, transform .16s ease;
 }
 
-
 .reminder-panel button:hover {
-  background: #FFFFFF;
-
+  background: rgba(255,255,255,.88);
   transform: translateY(-1px);
 }
 
-
-/* ============================================================
-   RESOURCES
-============================================================ */
+/* ================================================================
+   DASHBOARD RESOURCE CARDS
+================================================================ */
 
 .resource-section {
   margin-bottom: 20px;
 }
 
-
 .resource-grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 15px;
 }
 
-
 .resource-card {
+  min-width: 0;
   overflow: hidden;
-
-  background: #FFFFFF;
-
-  border:
-    1px solid var(--student-border);
-
-  border-radius: 16px;
-
-  box-shadow:
-    var(--shadow-xs);
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+  border: 1px solid #e3ebe5;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 6px 21px rgba(55, 78, 63, .04);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
-
 
 .resource-card:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    var(--shadow-md);
+  transform: translateY(-4px);
+  border-color: #d2e0d6;
+  box-shadow: var(--dash-shadow-hover);
 }
-
 
 .resource-thumbnail {
   position: relative;
-
-  height: 135px;
-
+  height: 118px;
+  overflow: hidden;
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
-  background: #EEF6F0;
+  isolation: isolate;
+  background: linear-gradient(135deg, #e5f3e9, #f5faf6);
 }
 
-
-.resource-card:nth-child(2)
-.resource-thumbnail {
-  background: #FFF7D7;
+.resource-card:nth-child(2) .resource-thumbnail {
+  background: linear-gradient(135deg, #eee8ff, #f8f6fd);
 }
 
-
-.resource-card:nth-child(3)
-.resource-thumbnail {
-  background: #FCEBF0;
+.resource-card:nth-child(3) .resource-thumbnail {
+  background: linear-gradient(135deg, #e3f2fd, #f6fafd);
 }
 
+.resource-thumbnail::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 125px;
+  height: 125px;
+  right: -44px;
+  top: -70px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.48);
+}
+
+.resource-thumbnail::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 82px;
+  height: 82px;
+  left: -42px;
+  bottom: -52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.30);
+}
 
 .resource-thumbnail-icon {
-  font-size: 37px;
-
-  opacity: 0.9;
+  position: relative;
+  z-index: 1;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.92);
+  border-radius: 17px;
+  background: rgba(255,255,255,.83);
+  box-shadow: 0 7px 18px rgba(55,75,61,.075);
+  font-size: 27px;
 }
-
 
 .resource-play {
   position: absolute;
-
+  z-index: 2;
   left: 50%;
   top: 50%;
-
-  width: 42px;
-  height: 42px;
-
-  transform:
-    translate(-50%, -50%);
-
-  border: none;
-
-  background:
-    rgba(255, 255, 255, 0.9);
-
+  width: 37px;
+  height: 37px;
+  transform: translate(-50%, -50%);
+  border: 0;
   border-radius: 50%;
-
-  color: #53735E;
-
-  font-size: 13px;
-
-  box-shadow:
-    0 5px 18px rgba(55, 75, 61, 0.08);
-
+  background: rgba(255,255,255,.94);
+  color: #53735e;
+  font-size: 11px;
+  box-shadow: 0 6px 16px rgba(55,75,61,.11);
   cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease;
 }
 
+.resource-play:hover {
+  transform: translate(-50%, -50%) scale(1.07);
+  box-shadow: 0 8px 20px rgba(55,75,61,.15);
+}
 
 .resource-content {
-  padding:
-    14px
-    15px
-    15px;
+  min-width: 0;
+  padding: 14px 15px 15px;
 }
 
-
 .resource-category {
-  color: #8CA094;
-
-  font-size: 8px;
-
-  font-weight: 750;
-
+  color: #789080;
+  font-size: 8.5px;
+  font-weight: 800;
   letter-spacing: 1px;
 }
 
-
 .resource-content h3 {
-  margin:
-    5px
-    0
-    10px;
-
-  color: #435149;
-
-  font-size: 12px;
-
+  margin: 5px 0 10px;
+  color: #3f4d45;
+  font-size: 13px;
   line-height: 1.45;
+  font-weight: 680;
 }
-
 
 .resource-meta {
   display: flex;
-
+  align-items: center;
   justify-content: space-between;
-
-  color: #9AA49E;
-
-  font-size: 9px;
+  gap: 10px;
+  color: #8a9790;
+  font-size: 9.5px;
 }
 
-
-/* ============================================================
-   LEGACY SIMPLE CHART
-   Kept because existing JSX may still use it
-============================================================ */
-
-.chart-placeholder {
-  height: 190px;
-
-  display: grid;
-
-  grid-template-columns:
-    46px
-    1fr;
-
-  grid-template-rows:
-    1fr
-    25px;
-
-  column-gap: 12px;
+.resource-meta span:first-child {
+  color: #5c7967;
+  font-weight: 700;
 }
 
+/* ================================================================
+   RESPONSIVE
+================================================================ */
 
-.chart-y-labels {
-  grid-row: 1;
-
-  display: flex;
-
-  flex-direction: column;
-
-  justify-content: space-between;
-
-  padding: 3px 0;
-
-  color: #A1AAA4;
-
-  font-size: 8.5px;
-
-  text-align: right;
-}
-
-
-.simple-chart {
-  position: relative;
-
-  overflow: hidden;
-
-  border-bottom:
-    1px solid #E8EEEA;
-}
-
-
-.chart-line {
-  position: absolute;
-
-  left: 0;
-  right: 0;
-
-  border-top:
-    1px dashed #EDF1EE;
-}
-
-
-.chart-line-one {
-  top: 25%;
-}
-
-
-.chart-line-two {
-  top: 50%;
-}
-
-
-.chart-line-three {
-  top: 75%;
-}
-
-
-.chart-points {
-  position: absolute;
-
-  inset: 0;
-
-  color: #79A987;
-
-  font-size: 13px;
-}
-
-
-.chart-points span {
-  position: absolute;
-
-  transform:
-    translate(-50%, 50%);
-}
-
-
-.chart-days {
-  grid-column: 2;
-
-  display: flex;
-
-  justify-content: space-between;
-
-  padding-top: 7px;
-
-  color: #9DA7A1;
-
-  font-size: 8.5px;
-}
-
-
-/* ============================================================
-   RESPONSIVE — TABLET
-============================================================ */
-
-@media (max-width: 1100px) {
-
-  .summary-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-
-    gap: 12px;
+@media (max-width: 1180px) {
+  .student-main {
+    padding-left: 30px;
+    padding-right: 30px;
   }
 
   .quick-actions {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 }
 
-
-/* ============================================================
-   RESPONSIVE — SMALL TABLET
-============================================================ */
-
-@media (max-width: 900px) {
-
-  .summary-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+@media (max-width: 980px) {
+  .student-main {
+    margin-left: 220px;
+    padding: 28px 24px 70px;
   }
 
   .dashboard-two-column {
     grid-template-columns: 1fr;
   }
 
-  .resource-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+  .summary-grid {
+    grid-template-columns: 1fr;
   }
 
+  .summary-card {
+    min-height: 132px;
+  }
+
+  .resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-
-/* ============================================================
-   RESPONSIVE — MOBILE
-============================================================ */
-
-@media (max-width: 768px) {
-
-  .dashboard-header {
-    margin-bottom: 20px;
+@media (max-width: 760px) {
+  .student-main {
+    margin-left: 72px;
+    padding: 23px 17px 60px;
   }
 
-  .dashboard-header h1 {
-    font-size: 26px;
+  .dashboard-header {
+    align-items: flex-start;
   }
 
   .dashboard-header-actions {
     display: none;
   }
 
-  .summary-grid {
-    grid-template-columns: 1fr;
-
-    gap: 12px;
-  }
-
-  .summary-card {
-    min-height: 125px;
-  }
-
   .quick-actions {
     grid-template-columns: 1fr;
   }
 
   .indicator-list {
     grid-template-columns: 1fr;
-
-    gap: 16px;
   }
 
   .resource-grid {
@@ -1526,2417 +995,56 @@
     padding: 18px;
   }
 
-  .panel-heading {
-    flex-direction: column;
-
-    gap: 5px;
-  }
-
-  .small-status {
-    white-space: normal;
-  }
-
+  .chart-svg-wrapper,
   .wellbeing-chart {
-    min-height: 260px;
+    height: 275px;
+    min-height: 275px;
   }
-
-  .chart-svg-wrapper {
-    height: 260px;
-  }
-
-  .chart-note {
-    flex-direction: column;
-
-    align-items: flex-start;
-  }
-
-  .calendar-day {
-    min-height: 42px;
-
-    border-radius: 10px;
-
-    font-size: 10px;
-  }
-
 }
 
-
-/* ============================================================
-   RESPONSIVE — SMALL MOBILE
-============================================================ */
-
-@media (max-width: 480px) {
+@media (max-width: 500px) {
+  .student-main {
+    padding: 20px 13px 50px;
+  }
 
   .dashboard-header h1 {
-    font-size: 24px;
-
-    letter-spacing: -0.5px;
-  }
-
-  .dashboard-header p {
-    font-size: 12px;
-  }
-
-  .summary-card {
-    padding: 17px;
-  }
-
-  .summary-value {
     font-size: 25px;
   }
 
-  .dashboard-panel {
-    padding: 16px;
-  }
-
-  .reminder-panel {
-    padding: 19px;
-  }
-
-  .reminder-panel h2 {
-    font-size: 17px;
-  }
-
-  .calendar-weekdays {
-    font-size: 8px;
-  }
-
-  .calendar-day {
-    min-height: 38px;
-
-    font-size: 9px;
-  }
-
-}
-
-/* ============================================================
-   STUDENT DASHBOARD — HEADER POLISH
-============================================================ */
-
-.dashboard-header {
-  position: relative;
-
-  padding:
-    4px
-    2px
-    0;
-
-  margin-bottom: 28px;
-}
-
-
-.dashboard-header > div:first-child {
-  position: relative;
-}
-
-
-.dashboard-date {
-  display: inline-flex;
-  align-items: center;
-
-  min-height: 25px;
-
-  padding:
-    0
-    9px;
-
-  margin-bottom: 8px;
-
-  background: #EDF6F0;
-
-  border-radius: 7px;
-
-  color: #6C8774;
-
-  font-size: 9px;
-
-  font-weight: 700;
-
-  letter-spacing: 0.45px;
-
-  text-transform: uppercase;
-}
-
-
-.dashboard-header h1 {
-  margin: 0;
-
-  color: #2F4036;
-
-  font-size:
-    clamp(27px, 3vw, 35px);
-
-  font-weight: 750;
-
-  letter-spacing: -1px;
-
-  line-height: 1.15;
-}
-
-
-.dashboard-header h1 span {
-  font-size: inherit;
-}
-
-
-.dashboard-header h1 .student-name {
-  color: #628A6D;
-}
-
-
-.dashboard-header p {
-  margin-top: 9px;
-
-  color: #89958E;
-
-  font-size: 12.5px;
-
-  line-height: 1.6;
-}
-
-
-/* ============================================================
-   HEADER ACTIONS
-============================================================ */
-
-.dashboard-header-actions {
-  padding-top: 3px;
-}
-
-
-.header-icon-button {
-  position: relative;
-
-  width: 42px;
-  height: 42px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border:
-    1px solid #E6ECE8;
-
-  background: #FFFFFF;
-
-  border-radius: 12px;
-
-  color: #77867D;
-
-  font-size: 17px;
-
-  box-shadow:
-    0 3px 12px rgba(55, 75, 61, 0.035);
-
-  cursor: pointer;
-
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-
-.header-icon-button:hover {
-  transform: translateY(-2px);
-
-  border-color: #D5E3D9;
-
-  box-shadow:
-    0 7px 18px rgba(55, 75, 61, 0.07);
-}
-
-
-.notification-dot {
-  position: absolute;
-
-  top: 8px;
-  right: 8px;
-
-  width: 6px;
-  height: 6px;
-
-  background: #D994A9;
-
-  border: 2px solid #FFFFFF;
-
-  border-radius: 50%;
-}
-
-
-.profile-mini {
-  width: 42px;
-  height: 42px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background:
-    linear-gradient(
-      135deg,
-      #EEE8FF,
-      #E5DDF8
-    );
-
-  border:
-    1px solid #E3DCF0;
-
-  border-radius: 50%;
-
-  color: #75639A;
-
-  font-size: 12px;
-
-  font-weight: 750;
-
-  box-shadow:
-    0 3px 12px rgba(88, 70, 120, 0.06);
-
-  cursor: pointer;
-}
-
-
-/* ============================================================
-   SUMMARY CARDS — PREMIUM VERSION
-============================================================ */
-
-.summary-grid {
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
-  gap: 17px;
-
-  margin-bottom: 22px;
-}
-
-
-.summary-card {
-  min-height: 150px;
-
-  padding: 20px 21px;
-
-  border-radius: 18px;
-
-  overflow: hidden;
-
-  isolation: isolate;
-
-  box-shadow:
-    0 4px 15px rgba(55, 75, 61, 0.035);
-
-  transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease;
-}
-
-
-.summary-card:hover {
-  transform: translateY(-3px);
-
-  box-shadow:
-    0 12px 28px rgba(55, 75, 61, 0.08);
-}
-
-
-/* Decorative circles */
-
-.summary-card::before {
-  content: '';
-
-  position: absolute;
-
-  z-index: -1;
-
-  width: 125px;
-  height: 125px;
-
-  right: -50px;
-  top: -55px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.25);
-}
-
-
-.summary-card::after {
-  content: '';
-
-  position: absolute;
-
-  z-index: -1;
-
-  width: 80px;
-  height: 80px;
-
-  right: -24px;
-  bottom: -30px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.18);
-}
-
-
-/* ------------------------------------------------------------
-   CARD TOP
------------------------------------------------------------- */
-
-.summary-card-top {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-}
-
-
-.summary-icon {
-  width: 38px;
-  height: 38px;
-
-  border-radius: 11px;
-
-  background:
-    rgba(255, 255, 255, 0.72);
-
-  box-shadow:
-    0 3px 9px rgba(60, 80, 65, 0.035);
-
-  font-size: 17px;
-}
-
-
-.summary-label {
-  color: #68766E;
-
-  font-size: 8.5px;
-
-  font-weight: 750;
-
-  letter-spacing: 1.15px;
-
-  line-height: 1.4;
-}
-
-
-/* ------------------------------------------------------------
-   CARD VALUE
------------------------------------------------------------- */
-
-.summary-value {
-  margin-top: 18px;
-
-  color: #33483A;
-
-  font-size: 29px;
-
-  font-weight: 750;
-
-  letter-spacing: -0.5px;
-
-  line-height: 1;
-}
-
-
-.summary-value span {
-  margin-left: 6px;
-
-  color: #7B887F;
-
-  font-size: 11px;
-
-  font-weight: 550;
-
-  letter-spacing: 0;
-}
-
-
-/* ------------------------------------------------------------
-   CARD FOOTER
------------------------------------------------------------- */
-
-.summary-footer {
-  margin-top: 10px;
-
-  color: #78857E;
-
-  font-size: 9.5px;
-
-  line-height: 1.4;
-}
-
-
-/* ------------------------------------------------------------
-   INDIVIDUAL CARD COLORS
------------------------------------------------------------- */
-
-.summary-yellow {
-  background:
-    linear-gradient(
-      135deg,
-      #FFF4C2 0%,
-      #FFF6D0 100%
-    );
-
-  border:
-    1px solid #F2E6B4;
-}
-
-
-.summary-green {
-  background:
-    linear-gradient(
-      135deg,
-      #DFF3E4 0%,
-      #E7F6EB 100%
-    );
-
-  border:
-    1px solid #D2E8D8;
-}
-
-
-.summary-pink {
-  background:
-    linear-gradient(
-      135deg,
-      #FCE4EC 0%,
-      #FDEBF0 100%
-    );
-
-  border:
-    1px solid #F1D7E0;
-}
-
-
-/* ------------------------------------------------------------
-   RISK TEXT
------------------------------------------------------------- */
-
-.summary-value.risk-low {
-  color: #4F7E5B;
-}
-
-
-.summary-value.risk-medium {
-  color: #9A7942;
-}
-
-
-.summary-value.risk-high {
-  color: #A85F70;
-}
-
-
-.summary-value.risk-neutral {
-  color: #65736A;
-}
-
-
-/* ============================================================
-   SUMMARY CARD LOADING
-============================================================ */
-
-.summary-value:has(> span) {
-  white-space: nowrap;
-}
-
-
-/* ============================================================
-   MOBILE
-============================================================ */
-
-@media (max-width: 768px) {
-
-  .dashboard-header {
-    margin-bottom: 20px;
-  }
-
-
-  .dashboard-header h1 {
-    font-size: 26px;
-  }
-
-
   .dashboard-header p {
-    font-size: 11.5px;
+    font-size: 11px;
   }
-
-
-  .summary-grid {
-    gap: 11px;
-  }
-
 
   .summary-card {
-    min-height: 132px;
-
+    min-height: 126px;
     padding: 18px;
   }
 
-
-  .summary-value {
-    margin-top: 15px;
-
-    font-size: 26px;
-  }
-
-}
-
-
-@media (max-width: 480px) {
-
-  .dashboard-header h1 {
-    font-size: 23px;
-  }
-
-
-  .dashboard-date {
-    font-size: 8px;
-  }
-
-
-  .summary-card {
-    min-height: 125px;
-
+  .dashboard-panel {
     padding: 16px;
+    border-radius: 17px;
   }
 
-
-  .summary-icon {
-    width: 34px;
-    height: 34px;
-
-    font-size: 15px;
-  }
-
-
-  .summary-label {
-    font-size: 8px;
-  }
-
-}
-
-/* ============================================================
-   STEP 2C — WELLBEING ANALYTICS
-============================================================ */
-
-
-/* ============================================================
-   ANALYTICS CONTAINER
-============================================================ */
-
-.dashboard-two-column {
-  display: grid;
-
-  grid-template-columns:
-    minmax(0, 1.55fr)
-    minmax(300px, 0.85fr);
-
-  gap: 18px;
-
-  margin-bottom: 22px;
-}
-
-
-/* ============================================================
-   MAIN ANALYTICS PANEL
-============================================================ */
-
-.dashboard-panel {
-  position: relative;
-
-  min-width: 0;
-
-  padding: 22px;
-
-  background: #FFFFFF;
-
-  border:
-    1px solid #E7EDE9;
-
-  border-radius: 18px;
-
-  box-shadow:
-    0 4px 16px rgba(55, 75, 61, 0.045);
-}
-
-
-/* ============================================================
-   PANEL HEADER
-============================================================ */
-
-.panel-heading {
-  display: flex;
-
-  align-items: flex-start;
-
-  justify-content: space-between;
-
-  gap: 15px;
-
-  margin-bottom: 18px;
-}
-
-
-.panel-kicker {
-  display: block;
-
-  margin-bottom: 5px;
-
-  color: #9BA7A0;
-
-  font-size: 8px;
-
-  font-weight: 750;
-
-  letter-spacing: 1.2px;
-
-  text-transform: uppercase;
-}
-
-
-.panel-heading h2 {
-  margin: 0;
-
-  color: #34463B;
-
-  font-size: 17px;
-
-  font-weight: 700;
-
-  letter-spacing: -0.25px;
-}
-
-
-.small-status {
-  padding:
-    5px
-    8px;
-
-  background: #F4F8F5;
-
-  border-radius: 7px;
-
-  color: #819088;
-
-  font-size: 8.5px;
-
-  white-space: nowrap;
-}
-
-
-/* ============================================================
-   WEEKLY WELLBEING CHART
-============================================================ */
-
-.wellbeing-chart {
-  position: relative;
-
-  width: 100%;
-
-  min-height: 300px;
-
-  margin-top: 4px;
-}
-
-
-.chart-svg-wrapper {
-  width: 100%;
-
-  height: 290px;
-
-  overflow: visible;
-}
-
-
-.wellbeing-svg {
-  display: block;
-
-  width: 100%;
-
-  height: 100%;
-
-  overflow: visible;
-}
-
-
-/* ------------------------------------------------------------
-   GRID
------------------------------------------------------------- */
-
-.chart-grid-line {
-  stroke: #E9EFEB;
-
-  stroke-width: 1;
-
-  stroke-dasharray: 4 5;
-}
-
-
-/* ------------------------------------------------------------
-   AREA
------------------------------------------------------------- */
-
-.chart-area {
-  fill:
-    rgba(111, 159, 125, 0.10);
-}
-
-
-/* ------------------------------------------------------------
-   MAIN LINE
------------------------------------------------------------- */
-
-.chart-main-line {
-  fill: none;
-
-  stroke: #6F9F7D;
-
-  stroke-width: 3;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
-}
-
-
-/* ------------------------------------------------------------
-   POINTS
------------------------------------------------------------- */
-
-.chart-point-halo {
-  fill:
-    rgba(111, 159, 125, 0.13);
-}
-
-
-.chart-point {
-  fill: #FFFFFF;
-
-  stroke: #6F9F7D;
-
-  stroke-width: 2.5;
-}
-
-
-/* ------------------------------------------------------------
-   AXIS
------------------------------------------------------------- */
-
-.chart-axis-label {
-  fill: #9AA69F;
-
-  font-family: inherit;
-
-  font-size: 10px;
-}
-
-
-.chart-date-label {
-  fill: #89958E;
-
-  font-family: inherit;
-
-  font-size: 10px;
-}
-
-
-/* ============================================================
-   CHART NOTE
-============================================================ */
-
-.chart-note {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 15px;
-
-  min-height: 44px;
-
-  margin-top: 7px;
-
-  padding:
-    10px
-    13px;
-
-  box-sizing: border-box;
-
-  background: #F8FBF9;
-
-  border:
-    1px solid #EDF2EE;
-
-  border-radius: 10px;
-
-  color: #7D8A82;
-
-  font-size: 9.5px;
-
-  line-height: 1.5;
-}
-
-
-.chart-count {
-  color: #5E7667;
-
-  font-size: 9px;
-
-  font-weight: 700;
-
-  white-space: nowrap;
-}
-
-
-/* ============================================================
-   EMPTY CHART
-============================================================ */
-
-.chart-empty-state {
-  min-height: 275px;
-
-  display: flex;
-
-  flex-direction: column;
-
-  align-items: center;
-
-  justify-content: center;
-
-  padding: 30px;
-
-  text-align: center;
-}
-
-
-.chart-empty-icon {
-  width: 55px;
-  height: 55px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  margin-bottom: 13px;
-
-  background: #E8F4EC;
-
-  border-radius: 17px;
-
-  color: #628A6D;
-
-  font-size: 24px;
-}
-
-
-.chart-empty-state h3 {
-  margin: 0 0 6px;
-
-  color: #3B5242;
-
-  font-size: 16px;
-
-  font-weight: 700;
-}
-
-
-.chart-empty-state p {
-  max-width: 310px;
-
-  margin: 0;
-
-  color: #89958E;
-
-  font-size: 10.5px;
-
-  line-height: 1.6;
-}
-
-
-/* ============================================================
-   CALENDAR
-============================================================ */
-
-.calendar-panel {
-  min-width: 0;
-}
-
-
-/* ------------------------------------------------------------
-   CALENDAR HEADER
------------------------------------------------------------- */
-
-.calendar-controls {
-  display: flex;
-
-  align-items: center;
-
-  gap: 4px;
-}
-
-
-.calendar-controls button {
-  width: 27px;
-  height: 27px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  padding: 0;
-
-  border:
-    1px solid #E4EBE6;
-
-  background: #FFFFFF;
-
-  border-radius: 8px;
-
-  color: #7D8B82;
-
-  font-size: 12px;
-
-  cursor: pointer;
-
-  transition:
-    background 0.16s ease,
-    border-color 0.16s ease,
-    transform 0.16s ease;
-}
-
-
-.calendar-controls button:hover {
-  background: #F4F9F5;
-
-  border-color: #D7E4DA;
-
-  transform: translateY(-1px);
-}
-
-
-/* ============================================================
-   CALENDAR WEEKDAYS
-============================================================ */
-
-.calendar-weekdays {
-  display: grid;
-
-  grid-template-columns:
-    repeat(7, minmax(0, 1fr));
-
-  gap: 4px;
-
-  margin-bottom: 7px;
-
-  color: #A0AAA4;
-
-  font-size: 8px;
-
-  font-weight: 700;
-
-  text-align: center;
-
-  letter-spacing: 0.3px;
-}
-
-
-/* ============================================================
-   CALENDAR GRID
-============================================================ */
-
-.calendar-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(7, minmax(0, 1fr));
-
-  gap: 4px;
-}
-
-
-.calendar-day {
-  position: relative;
-
-  min-height: 42px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  border-radius: 10px;
-
-  color: #66756C;
-
-  font-size: 10px;
-
-  transition:
-    background 0.16s ease,
-    transform 0.16s ease;
-}
-
-
-.calendar-day:not(.empty):hover {
-  background: #F4F9F5;
-
-  transform: translateY(-1px);
-}
-
-
-.calendar-day.empty {
-  pointer-events: none;
-}
-
-
-/* ============================================================
-   TODAY
-============================================================ */
-
-.calendar-day.today {
-  background:
-    linear-gradient(
-      135deg,
-      #DFF3E4,
-      #E7F6EB
-    );
-
-  color: #3C694A;
-
-  font-weight: 750;
-
-  box-shadow:
-    inset 0 0 0 1px #D0E7D6;
-}
-
-
-/* ============================================================
-   ACTIVITY DAY
-============================================================ */
-
-.calendar-day.activity-day {
-  cursor: pointer;
-
-  background: #FAFCFA;
-}
-
-
-.calendar-day.activity-day:hover {
-  background: #EEF7F0;
-}
-
-
-/* ============================================================
-   DATE NUMBER
-============================================================ */
-
-.calendar-day-number {
-  position: relative;
-
-  z-index: 2;
-
-  line-height: 1;
-}
-
-
-/* ============================================================
-   ACTIVITY DOT
-============================================================ */
-
-.calendar-activity-dot {
-  position: absolute;
-
-  left: 50%;
-  bottom: 5px;
-
-  width: 4px;
-  height: 4px;
-
-  transform:
-    translateX(-50%);
-
-  border-radius: 50%;
-}
-
-
-.calendar-activity-dot.checkin-dot {
-  background: #6F9F7D;
-
-  box-shadow:
-    0 0 0 2px rgba(111, 159, 125, 0.10);
-}
-
-
-/* ============================================================
-   CALENDAR LEGEND
-============================================================ */
-
-.calendar-legend {
-  display: flex;
-
-  align-items: center;
-
-  gap: 16px;
-
-  margin-top: 14px;
-
-  padding-top: 12px;
-
-  border-top:
-    1px solid #EFF3F0;
-}
-
-
-.calendar-legend span {
-  display: flex;
-
-  align-items: center;
-
-  gap: 5px;
-
-  color: #8A968F;
-
-  font-size: 8.5px;
-}
-
-
-.legend-dot {
-  width: 6px;
-  height: 6px;
-
-  display: inline-block;
-
-  border-radius: 50%;
-}
-
-
-.legend-dot.checkin-dot {
-  background: #6F9F7D;
-}
-
-
-.legend-dot.selfcare-dot {
-  background: #D994A9;
-}
-
-
-/* ============================================================
-   MOBILE
-============================================================ */
-
-@media (max-width: 900px) {
-
-  .dashboard-two-column {
-    grid-template-columns: 1fr;
-  }
-
-
-  .calendar-panel {
-    min-height: auto;
-  }
-
-}
-
-
-@media (max-width: 768px) {
-
-  .dashboard-panel {
-    padding: 18px;
-  }
-
-
-  .wellbeing-chart {
-    min-height: 260px;
-  }
-
-
-  .chart-svg-wrapper {
-    height: 255px;
-  }
-
-
-  .calendar-day {
-    min-height: 40px;
-  }
-
-
-  .panel-heading h2 {
-    font-size: 16px;
-  }
-
-}
-
-
-@media (max-width: 480px) {
-
-  .dashboard-panel {
-    padding: 15px;
-  }
-
-
-  .chart-svg-wrapper {
-    height: 225px;
-  }
-
-
-  .calendar-day {
-    min-height: 36px;
-
-    font-size: 9px;
-  }
-
-
-  .calendar-weekdays {
-    font-size: 7px;
-  }
-
-
-  .calendar-legend {
+  .panel-heading {
     gap: 10px;
   }
 
-}
-
-/* ============================================================
-   STEP 2D — QUICK ACTIONS
-============================================================ */
-
-.dashboard-section {
-  margin-bottom: 24px;
-}
-
-
-/* ------------------------------------------------------------
-   SECTION HEADER
------------------------------------------------------------- */
-
-.section-heading {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 15px;
-
-  margin-bottom: 13px;
-}
-
-
-.section-heading h2 {
-  margin: 0;
-
-  color: #34463B;
-
-  font-size: 17px;
-
-  font-weight: 700;
-
-  letter-spacing: -0.25px;
-}
-
-
-.section-heading p {
-  margin: 4px 0 0;
-
-  color: #909B95;
-
-  font-size: 10px;
-}
-
-
-/* ============================================================
-   QUICK ACTION GRID
-============================================================ */
-
-.quick-actions {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 12px;
-}
-
-
-/* ============================================================
-   QUICK ACTION CARD
-============================================================ */
-
-.quick-action {
-  position: relative;
-
-  min-width: 0;
-  min-height: 88px;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 11px;
-
-  padding:
-    14px;
-
-  box-sizing: border-box;
-
-  border:
-    1px solid rgba(75, 95, 81, 0.08);
-
-  border-radius: 15px;
-
-  font-family: inherit;
-
-  text-align: left;
-
-  cursor: pointer;
-
-  overflow: hidden;
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-
-.quick-action::after {
-  content: '';
-
-  position: absolute;
-
-  width: 75px;
-  height: 75px;
-
-  right: -28px;
-  bottom: -32px;
-
-  background:
-    rgba(255, 255, 255, 0.25);
-
-  border-radius: 50%;
-}
-
-
-.quick-action:hover {
-  transform: translateY(-3px);
-
-  box-shadow:
-    0 9px 22px rgba(55, 75, 61, 0.075);
-}
-
-
-/* ============================================================
-   QUICK ACTION ICON
-============================================================ */
-
-.quick-action > span {
-  position: relative;
-
-  z-index: 1;
-
-  width: 39px;
-  height: 39px;
-
-  min-width: 39px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  background:
-    rgba(255, 255, 255, 0.72);
-
-  border-radius: 11px;
-
-  font-size: 17px;
-
-  box-shadow:
-    0 3px 9px rgba(55, 75, 61, 0.035);
-}
-
-
-/* ============================================================
-   QUICK ACTION TEXT
-============================================================ */
-
-.quick-action div {
-  position: relative;
-
-  z-index: 1;
-
-  flex: 1;
-
-  min-width: 0;
-
-  display: flex;
-
-  flex-direction: column;
-}
-
-
-.quick-action strong {
-  color: #405046;
-
-  font-size: 11px;
-
-  font-weight: 700;
-
-  line-height: 1.3;
-}
-
-
-.quick-action small {
-  margin-top: 4px;
-
-  color: #89958E;
-
-  font-size: 8.5px;
-
-  line-height: 1.4;
-}
-
-
-.quick-action b {
-  position: relative;
-
-  z-index: 1;
-
-  color: #819088;
-
-  font-size: 15px;
-
-  font-weight: 500;
-}
-
-
-/* ============================================================
-   QUICK ACTION COLORS
-============================================================ */
-
-.quick-yellow {
-  background:
-    linear-gradient(
-      135deg,
-      #FFF4C2,
-      #FFF7D4
-    );
-
-  border-color: #F0E4B4;
-}
-
-
-.quick-pink {
-  background:
-    linear-gradient(
-      135deg,
-      #FCE4EC,
-      #FDEDF1
-    );
-
-  border-color: #F1D9E1;
-}
-
-
-.quick-green {
-  background:
-    linear-gradient(
-      135deg,
-      #DFF3E4,
-      #E9F7EC
-    );
-
-  border-color: #D4E9DA;
-}
-
-
-.quick-neutral {
-  background:
-    linear-gradient(
-      135deg,
-      #E3F2FD,
-      #EDF7FD
-    );
-
-  border-color: #D8EAF4;
-}
-
-
-/* ============================================================
-   QUICK ACTION ICON COLORS
-============================================================ */
-
-.quick-yellow > span {
-  color: #947C43;
-}
-
-
-.quick-pink > span {
-  color: #A76B7E;
-}
-
-
-.quick-green > span {
-  color: #5B8566;
-}
-
-
-.quick-neutral > span {
-  color: #6687A0;
-}
-
-
-/* ============================================================
-   WELLBEING INDICATORS
-============================================================ */
-
-.indicators-section {
-  margin-bottom: 24px;
-}
-
-
-.indicators-section .section-heading {
-  margin-bottom: 14px;
-}
-
-
-.indicator-list {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap:
-    12px
-    15px;
-}
-
-
-/* ============================================================
-   INDICATOR CARD
-============================================================ */
-
-.indicator-item {
-  padding:
-    15px
-    16px;
-
-  background: #FFFFFF;
-
-  border:
-    1px solid #E7EDE9;
-
-  border-radius: 14px;
-
-  box-shadow:
-    0 3px 12px rgba(55, 75, 61, 0.03);
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-
-.indicator-item:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 7px 19px rgba(55, 75, 61, 0.055);
-}
-
-
-/* ============================================================
-   INDICATOR HEADER
-============================================================ */
-
-.indicator-heading {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  margin-bottom: 9px;
-}
-
-
-.indicator-name {
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  color: #66746C;
-
-  font-size: 10.5px;
-
-  font-weight: 600;
-}
-
-
-.indicator-name span {
-  width: 26px;
-  height: 26px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  background: #F5F8F6;
-
-  border-radius: 8px;
-
-  font-size: 13px;
-}
-
-
-.indicator-heading strong {
-  color: #4F6256;
-
-  font-size: 10px;
-
-  font-weight: 700;
-}
-
-
-/* ============================================================
-   INDICATOR PROGRESS
-============================================================ */
-
-.indicator-track {
-  position: relative;
-
-  width: 100%;
-  height: 7px;
-
-  overflow: hidden;
-
-  background: #EEF3EF;
-
-  border-radius: 20px;
-}
-
-
-.indicator-progress {
-  height: 100%;
-
-  background:
-    linear-gradient(
-      90deg,
-      #76A783,
-      #A5C7AC
-    );
-
-  border-radius: inherit;
-
-  transition:
-    width 0.5s ease;
-}
-
-
-.indicator-inverse {
-  background:
-    linear-gradient(
-      90deg,
-      #D0AE67,
-      #E1C989
-    );
-}
-
-
-/* ============================================================
-   INDICATOR LABEL
-============================================================ */
-
-.indicator-description {
-  margin-top: 7px;
-
-  color: #A0AAA4;
-
-  font-size: 8px;
-
-  line-height: 1.4;
-}
-
-
-/* ============================================================
-   RESPONSIVE
-============================================================ */
-
-@media (max-width: 1050px) {
-
-  .quick-actions {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-}
-
-
-@media (max-width: 768px) {
-
-  .quick-actions {
-    grid-template-columns: 1fr;
-  }
-
-
-  .quick-action {
-    min-height: 72px;
-  }
-
-
-  .indicator-list {
-    grid-template-columns: 1fr;
-
-    gap: 11px;
-  }
-
-
+  .panel-heading h2,
   .section-heading h2 {
     font-size: 16px;
   }
 
-}
-
-
-@media (max-width: 480px) {
-
-  .quick-action {
-    padding: 12px;
+  .calendar-day {
+    min-height: 40px;
+    font-size: 9px;
   }
 
-
-  .quick-action > span {
-    width: 36px;
-    height: 36px;
-
-    min-width: 36px;
+  .chart-note {
+    flex-direction: column;
+    align-items: flex-start;
   }
-
-
-  .indicator-item {
-    padding:
-      13px
-      14px;
-  }
-
-}
-
-/* ============================================================
-   STEP 2E — REMINDER + RESOURCES
-============================================================ */
-
-
-/* ============================================================
-   REMINDER SECTION
-============================================================ */
-
-.reminder-panel {
-  position: relative;
-
-  min-height: 175px;
-
-  padding: 23px 25px;
-
-  box-sizing: border-box;
-
-  overflow: hidden;
-
-  background:
-    linear-gradient(
-      135deg,
-      #FCE4EC 0%,
-      #FDEDF1 55%,
-      #F9E8EE 100%
-    );
-
-  border:
-    1px solid #F1D9E1;
-
-  border-radius: 18px;
-
-  box-shadow:
-    0 5px 18px rgba(130, 80, 95, 0.035);
-}
-
-
-.reminder-panel::before {
-  content: '';
-
-  position: absolute;
-
-  width: 160px;
-  height: 160px;
-
-  right: -65px;
-  top: -70px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.25);
-}
-
-
-.reminder-panel::after {
-  content: '';
-
-  position: absolute;
-
-  width: 90px;
-  height: 90px;
-
-  right: 80px;
-  bottom: -55px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.16);
-}
-
-
-/* ============================================================
-   REMINDER ICON
-============================================================ */
-
-.reminder-icon {
-  position: relative;
-
-  z-index: 1;
-
-  width: 42px;
-  height: 42px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  margin-bottom: 14px;
-
-  background:
-    rgba(255, 255, 255, 0.72);
-
-  border:
-    1px solid rgba(255, 255, 255, 0.65);
-
-  border-radius: 12px;
-
-  color: #A66579;
-
-  font-size: 18px;
-
-  box-shadow:
-    0 4px 12px rgba(130, 80, 95, 0.04);
-}
-
-
-/* ============================================================
-   REMINDER TEXT
-============================================================ */
-
-.reminder-panel h2 {
-  position: relative;
-
-  z-index: 1;
-
-  max-width: 480px;
-
-  margin: 0;
-
-  color: #654651;
-
-  font-size: 19px;
-
-  font-weight: 700;
-
-  line-height: 1.4;
-
-  letter-spacing: -0.25px;
-}
-
-
-.reminder-panel p {
-  position: relative;
-
-  z-index: 1;
-
-  max-width: 530px;
-
-  margin:
-    8px
-    0
-    16px;
-
-  color: #896E77;
-
-  font-size: 10.5px;
-
-  line-height: 1.7;
-}
-
-
-/* ============================================================
-   REMINDER BUTTON
-============================================================ */
-
-.reminder-panel button {
-  position: relative;
-
-  z-index: 2;
-
-  min-height: 34px;
-
-  padding:
-    7px
-    13px;
-
-  border:
-    1px solid rgba(150, 85, 105, 0.12);
-
-  background:
-    rgba(255, 255, 255, 0.70);
-
-  border-radius: 9px;
-
-  color: #8B586A;
-
-  font-family: inherit;
-
-  font-size: 9.5px;
-
-  font-weight: 700;
-
-  cursor: pointer;
-
-  transition:
-    background 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-
-.reminder-panel button:hover {
-  background: #FFFFFF;
-
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 5px 14px rgba(130, 80, 95, 0.06);
-}
-
-
-/* ============================================================
-   RESOURCES SECTION
-============================================================ */
-
-.resource-section {
-  margin-bottom: 28px;
-}
-
-
-.resource-section .section-heading {
-  margin-bottom: 14px;
-}
-
-
-.resource-section .section-heading h2 {
-  color: #34463B;
-}
-
-
-.resource-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
-  gap: 15px;
-}
-
-
-/* ============================================================
-   RESOURCE CARD
-============================================================ */
-
-.resource-card {
-  position: relative;
-
-  overflow: hidden;
-
-  background: #FFFFFF;
-
-  border:
-    1px solid #E7EDE9;
-
-  border-radius: 16px;
-
-  box-shadow:
-    0 3px 13px rgba(55, 75, 61, 0.035);
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-
-.resource-card:hover {
-  transform: translateY(-3px);
-
-  border-color: #DCE7DF;
-
-  box-shadow:
-    0 10px 25px rgba(55, 75, 61, 0.075);
-}
-
-
-/* ============================================================
-   RESOURCE THUMBNAIL
-============================================================ */
-
-.resource-thumbnail {
-  position: relative;
-
-  height: 135px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  overflow: hidden;
-
-  background:
-    linear-gradient(
-      135deg,
-      #E8F4EC,
-      #F0F8F2
-    );
-}
-
-
-.resource-card:nth-child(2)
-.resource-thumbnail {
-  background:
-    linear-gradient(
-      135deg,
-      #FFF4C2,
-      #FFF8DC
-    );
-}
-
-
-.resource-card:nth-child(3)
-.resource-thumbnail {
-  background:
-    linear-gradient(
-      135deg,
-      #FCE4EC,
-      #FDEDF1
-    );
-}
-
-
-.resource-thumbnail::before {
-  content: '';
-
-  position: absolute;
-
-  width: 115px;
-  height: 115px;
-
-  right: -38px;
-  top: -50px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.30);
-}
-
-
-.resource-thumbnail::after {
-  content: '';
-
-  position: absolute;
-
-  width: 75px;
-  height: 75px;
-
-  left: -25px;
-  bottom: -40px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(255, 255, 255, 0.18);
-}
-
-
-/* ============================================================
-   RESOURCE ICON
-============================================================ */
-
-.resource-thumbnail-icon {
-  position: relative;
-
-  z-index: 1;
-
-  width: 58px;
-  height: 58px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  background:
-    rgba(255, 255, 255, 0.62);
-
-  border-radius: 17px;
-
-  font-size: 29px;
-
-  box-shadow:
-    0 5px 16px rgba(55, 75, 61, 0.045);
-}
-
-
-/* ============================================================
-   PLAY BUTTON
-============================================================ */
-
-.resource-play {
-  position: absolute;
-
-  z-index: 2;
-
-  left: 50%;
-  top: 50%;
-
-  width: 40px;
-  height: 40px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  transform:
-    translate(-50%, -50%);
-
-  border:
-    1px solid rgba(255, 255, 255, 0.8);
-
-  background:
-    rgba(255, 255, 255, 0.92);
-
-  border-radius: 50%;
-
-  color: #53745E;
-
-  font-size: 12px;
-
-  box-shadow:
-    0 5px 17px rgba(55, 75, 61, 0.10);
-
-  cursor: pointer;
-
-  opacity: 0;
-
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-}
-
-
-.resource-card:hover .resource-play {
-  opacity: 1;
-
-  transform:
-    translate(-50%, -50%)
-    scale(1.03);
-}
-
-
-/* ============================================================
-   RESOURCE CONTENT
-============================================================ */
-
-.resource-content {
-  padding:
-    14px
-    15px
-    16px;
-}
-
-
-.resource-category {
-  display: inline-block;
-
-  color: #91A097;
-
-  font-size: 7.5px;
-
-  font-weight: 750;
-
-  letter-spacing: 1px;
-
-  text-transform: uppercase;
-}
-
-
-.resource-content h3 {
-  margin:
-    6px
-    0
-    11px;
-
-  color: #405047;
-
-  font-size: 12px;
-
-  font-weight: 700;
-
-  line-height: 1.45;
-}
-
-
-.resource-meta {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 10px;
-
-  color: #9AA49E;
-
-  font-size: 8.5px;
-}
-
-
-.resource-meta span:first-child {
-  display: flex;
-
-  align-items: center;
-
-  gap: 4px;
-}
-
-
-/* ============================================================
-   FINAL DASHBOARD SPACING
-============================================================ */
-
-.dashboard-section:last-of-type,
-.resource-section:last-of-type {
-  margin-bottom: 10px;
-}
-
-
-/* ============================================================
-   SOS BUTTON POSITION
-============================================================ */
-
-.student-dashboard .sos-button {
-  z-index: 900;
-}
-
-
-/* ============================================================
-   FULL DASHBOARD RESPONSIVE CLEANUP
-============================================================ */
-
-@media (max-width: 1050px) {
-
-  .resource-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-}
-
-
-@media (max-width: 768px) {
-
-  .reminder-panel {
-    min-height: 160px;
-
-    padding: 20px;
-  }
-
-
-  .reminder-panel h2 {
-    font-size: 17px;
-  }
-
-
-  .resource-grid {
-    grid-template-columns: 1fr;
-
-    gap: 12px;
-  }
-
 
   .resource-thumbnail {
-    height: 150px;
+    height: 110px;
   }
-
-
-  .resource-play {
-    opacity: 1;
-  }
-
-}
-
-
-@media (max-width: 480px) {
-
-  .reminder-panel {
-    padding: 18px;
-  }
-
-
-  .reminder-panel h2 {
-    font-size: 16px;
-  }
-
-
-  .reminder-panel p {
-    font-size: 9.5px;
-  }
-
-
-  .resource-thumbnail {
-    height: 135px;
-  }
-
-
-  .resource-content {
-    padding:
-      13px
-      14px
-      15px;
-  }
-
 }

@@ -424,6 +424,13 @@ class Resource(db.Model):
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        # We intentionally avoid adding a new database column here.
+        # A YouTube URL identifies a video resource; resources without a
+        # YouTube URL are treated as articles/guides. This keeps the existing
+        # database schema compatible with the current MindEase project.
+        url_lower = (self.url or '').lower()
+        resource_type = 'video' if ('youtube.com' in url_lower or 'youtu.be' in url_lower) else 'article'
+
         return {
             'id':          self.id,
             'title':       self.title,
@@ -432,6 +439,7 @@ class Resource(db.Model):
             'content':     self.content,
             'url':         self.url,
             'icon':        self.icon,
+            'type':        resource_type,
         }
 
 # ============================================================
@@ -2123,6 +2131,156 @@ def get_resources():
     return jsonify([r.to_dict() for r in resources]), 200
 
 
+# ── GET /api/resources/recommended — personalize resources from latest check-in ──
+@app.route('/api/resources/recommended', methods=['GET'])
+@login_required
+def get_recommended_resources():
+    try:
+        user_id = session['user_id']
+
+        latest = (
+            CheckIn.query
+            .filter_by(user_id=user_id)
+            .order_by(CheckIn.checkin_date.desc(), CheckIn.id.desc())
+            .first()
+        )
+
+        if not latest:
+            return jsonify({
+                'success': True,
+                'has_checkin': False,
+                'message': 'Complete a wellbeing check-in to receive personalized resources.',
+                'risk_result': None,
+                'checkin_date': None,
+                'recommendations': []
+            }), 200
+
+        risk = str(latest.risk_result or '').strip().lower()
+
+        # Base category priorities come from the student's latest AI risk result.
+        # These are wellness-resource recommendations, not a diagnosis.
+        if risk in ['high', 'poor']:
+            category_priority = {
+                'Stress': 5,
+                'Anxiety': 5,
+                'Sleep': 4,
+                'Loneliness': 3,
+                'Motivation': 2
+            }
+            risk_label = 'High'
+        elif risk in ['medium', 'moderate']:
+            category_priority = {
+                'Stress': 5,
+                'Sleep': 4,
+                'Anxiety': 4,
+                'Loneliness': 3,
+                'Motivation': 3
+            }
+            risk_label = 'Medium'
+        else:
+            category_priority = {
+                'Motivation': 5,
+                'Sleep': 4,
+                'Loneliness': 4,
+                'Stress': 2,
+                'Anxiety': 2
+            }
+            risk_label = 'Low'
+
+        # Refine the recommendation using the student's latest check-in indicators.
+        # The thresholds are used only to choose educational/wellness resources.
+        try:
+            if float(latest.stress_level) >= 7:
+                category_priority['Stress'] += 4
+                category_priority['Anxiety'] += 2
+            if float(latest.sleep_hours) < 6:
+                category_priority['Sleep'] += 5
+            if float(latest.social_support) <= 3:
+                category_priority['Loneliness'] += 4
+            if float(latest.exam_pressure) >= 7:
+                category_priority['Anxiety'] += 3
+                category_priority['Stress'] += 2
+            if float(latest.academic_performance) <= 3:
+                category_priority['Motivation'] += 3
+                category_priority['Stress'] += 1
+        except (TypeError, ValueError):
+            # If an older record contains an unexpected value, keep risk-based ranking.
+            pass
+
+        resources = Resource.query.all()
+
+        # Score each resource by category relevance, then keep a diverse set.
+        scored = []
+        for resource in resources:
+            score = category_priority.get(resource.category, 0)
+            title_text = f"{resource.title} {resource.description}".lower()
+
+            # Small keyword bonuses make recommendations more specific without
+            # requiring a database migration or changing the Resource table.
+            if latest.sleep_hours is not None and float(latest.sleep_hours) < 6 and any(
+                word in title_text for word in ['sleep', 'sleep hygiene', 'rest']
+            ):
+                score += 2
+            if latest.stress_level is not None and float(latest.stress_level) >= 7 and any(
+                word in title_text for word in ['stress', 'relax', 'breath', 'ground']
+            ):
+                score += 2
+            if latest.exam_pressure is not None and float(latest.exam_pressure) >= 7 and any(
+                word in title_text for word in ['exam', 'anxiety', 'stress']
+            ):
+                score += 2
+            if latest.social_support is not None and float(latest.social_support) <= 3 and any(
+                word in title_text for word in ['social', 'connection', 'loneliness', 'university']
+            ):
+                score += 2
+
+            scored.append((score, resource))
+
+        scored.sort(key=lambda item: (-item[0], item[1].title.lower()))
+
+        # Prefer different categories so the student sees a useful mix.
+        selected = []
+        used_categories = set()
+        for score, resource in scored:
+            if score <= 0:
+                continue
+            if resource.category not in used_categories:
+                selected.append(resource)
+                used_categories.add(resource.category)
+            if len(selected) >= 3:
+                break
+
+        # Fill remaining slots from the highest scoring resources.
+        if len(selected) < 3:
+            selected_ids = {r.id for r in selected}
+            for score, resource in scored:
+                if score <= 0 or resource.id in selected_ids:
+                    continue
+                selected.append(resource)
+                selected_ids.add(resource.id)
+                if len(selected) >= 3:
+                    break
+
+        return jsonify({
+            'success': True,
+            'has_checkin': True,
+            'risk_result': risk_label,
+            'checkin_date': (
+                latest.checkin_date.isoformat()
+                if latest.checkin_date else None
+            ),
+            'recommendations': [r.to_dict() for r in selected]
+        }), 200
+
+    except Exception as e:
+        print('❌ Recommended resources error:', e)
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load personalized resources',
+            'details': str(e)
+        }), 500
+
+
 # ── Seed starter resources — call once from app context ────────
 # Add this helper function and call it in the if __name__ == '__main__' block
 def seed_resources():
@@ -2177,6 +2335,50 @@ def seed_resources():
         db.session.add(Resource(**r))
     db.session.commit()
     print(f"✅ Seeded {len(starter)} starter resources")
+
+
+# ── Add verified video resources without changing the existing DB schema ──
+def seed_video_resources():
+    videos = [
+        {
+            'title': 'The 5-4-3-2-1 Method: A Grounding Exercise',
+            'icon': '🎥',
+            'category': 'Anxiety',
+            'description': 'A short guided grounding exercise that uses your five senses to bring attention back to the present moment.',
+            'content': 'Follow along with the 5-4-3-2-1 grounding method. This educational video is provided as a supportive wellbeing resource.',
+            'url': 'https://www.youtube.com/watch?v=30VMIEmA114'
+        },
+        {
+            'title': '12-Minute Guided Meditation to Release Tension',
+            'icon': '🎥',
+            'category': 'Stress',
+            'description': 'A guided meditation and breathing exercise designed to help release built-up tension and encourage a calmer moment.',
+            'content': 'Set aside a quiet 12 minutes and follow the guided breathing and meditation practice.',
+            'url': 'https://www.youtube.com/watch?v=CFKxKfVOODw'
+        },
+        {
+            'title': 'Relaxing Wind Down Body Scan for Deep Sleep',
+            'icon': '🎥',
+            'category': 'Sleep',
+            'description': 'A gentle body-scan practice from Headspace designed to help you wind down before sleep.',
+            'content': 'Use this as a relaxing bedtime practice. It is an educational wellbeing resource, not a medical treatment.',
+            'url': 'https://www.youtube.com/watch?v=3o9etQktCpI'
+        },
+    ]
+
+    added = 0
+    for item in videos:
+        existing = Resource.query.filter_by(title=item['title']).first()
+        if existing:
+            continue
+        db.session.add(Resource(**item))
+        added += 1
+
+    if added:
+        db.session.commit()
+        print(f"✅ Added {added} video resources")
+    else:
+        print('ℹ️ Video resources already exist')
 
 
 def counsellor_required(f):
@@ -4899,8 +5101,8 @@ def admin_analytics():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all() 
-        seed_resources() 
+        seed_resources()
+        seed_video_resources()
         print("✅ All 7 database tables created in mindease_db")
     app.run(debug=False, port=5000)
-
 

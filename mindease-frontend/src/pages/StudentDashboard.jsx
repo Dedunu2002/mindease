@@ -14,7 +14,10 @@ export default function StudentDashboard() {
 const [latestCheckin, setLatestCheckin] = useState(null)
 const [checkinHistory, setCheckinHistory] = useState([])
 const [badges, setBadges] = useState([])
+const [currentUser, setCurrentUser] = useState(null)
 const [loading, setLoading] = useState(true)
+const [recommendedResources, setRecommendedResources] = useState([])
+const [recommendationInfo, setRecommendationInfo] = useState(null)
 
   useEffect(() => {
     loadDashboardData()
@@ -22,7 +25,10 @@ const [loading, setLoading] = useState(true)
 
   const loadDashboardData = async () => {
   try {
-    const [streakRes, latestRes, historyRes] = await Promise.all([
+    const [meRes, streakRes, latestRes, historyRes, recommendedRes] = await Promise.all([
+      fetch(`${API}/me`, {
+    credentials: 'include'
+     }),
       fetch(`${API}/streak`, {
         credentials: 'include'
       }),
@@ -33,8 +39,16 @@ const [loading, setLoading] = useState(true)
 
       fetch(`${API}/checkins/history`, {
         credentials: 'include'
+      }),
+
+      fetch(`${API}/resources/recommended`, {
+        credentials: 'include'
       })
     ])
+    if (meRes.ok) {
+      const userData = await meRes.json()
+      setCurrentUser(userData)
+    }
 
     if (streakRes.ok) {
   const streakData = await streakRes.json()
@@ -51,6 +65,12 @@ const [loading, setLoading] = useState(true)
     if (historyRes.ok) {
       const historyData = await historyRes.json()
       setCheckinHistory(historyData.checkins || [])
+    }
+
+    if (recommendedRes.ok) {
+      const recommendationData = await recommendedRes.json()
+      setRecommendedResources(recommendationData.recommendations || [])
+      setRecommendationInfo(recommendationData)
     }
 
   } catch (error) {
@@ -85,6 +105,28 @@ const [loading, setLoading] = useState(true)
     month: 'long',
     day: 'numeric'
   })
+  const getGreeting = () => {
+  const hour = today.getHours()
+
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+const displayName =
+  currentUser?.name?.trim() || 'there'
+
+const firstName =
+  displayName.split(' ')[0]
+
+const userInitial =
+  displayName
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
   const getIndicatorValue = (field, defaultValue = 0) => {
   if (!latestCheckin) return defaultValue
 
@@ -135,40 +177,58 @@ const socialPercentage = Math.min(
 
         <header className="dashboard-header">
 
-          <div>
-            <div className="dashboard-date">
-              {formattedDate}
-            </div>
+  <div className="dashboard-welcome">
 
-            <h1>
-  Good evening, <span className="student-name">Ann</span> <span>🌷</span>
-</h1>
+    <div className="dashboard-date">
+      {formattedDate}
+    </div>
 
-            <p>
-              Here's a gentle look at your wellbeing today.
-            </p>
-          </div>
+    <div className="dashboard-greeting-row">
 
-          <div className="dashboard-header-actions">
+      <div className="welcome-text">
 
-            <button
-  className="header-icon-button"
-  aria-label="Notifications"
->
-  ♡
-  <span className="notification-dot"></span>
-</button>
+        <h1>
+          {getGreeting()},{' '}
+          <span className="student-name">
+            {firstName}
+          </span>{' '}
+          <span className="welcome-flower">🌷</span>
+        </h1>
 
-            <button
-              className="profile-mini"
-              onClick={() => navigate('/profile')}
-            >
-              A
-            </button>
+        <p>
+          Here's a gentle look at your wellbeing today.
+        </p>
 
-          </div>
+      </div>
 
-        </header>
+    </div>
+
+  </div>
+
+
+  <div className="dashboard-header-actions">
+
+    <button
+      className="header-icon-button"
+      aria-label="Notifications"
+      type="button"
+    >
+      ♡
+      <span className="notification-dot"></span>
+    </button>
+
+    <button
+      className="profile-mini"
+      onClick={() => navigate('/profile')}
+      aria-label="Open profile"
+      type="button"
+    >
+      {userInitial || 'U'}
+    </button>
+
+  </div>
+
+</header>
 
 
         {/* =========================================
@@ -452,6 +512,12 @@ const socialPercentage = Math.min(
               </span>
 
               <h2>Recommended for you</h2>
+
+              <p className="resource-section-subtitle">
+                {recommendationInfo?.has_checkin
+                  ? 'Personalized from your latest wellbeing check-in.'
+                  : 'Complete a check-in to receive resources chosen for you.'}
+              </p>
             </div>
 
             <button
@@ -463,31 +529,64 @@ const socialPercentage = Math.min(
 
           </div>
 
+          {recommendedResources.length > 0 ? (
 
-          <div className="resource-grid">
+            <div className="resource-grid">
 
-            <ResourceCard
-              icon="🌿"
-              category="BREATHING"
-              title="5-minute calming breath"
-              duration="5 min"
-            />
+              {recommendedResources.slice(0, 3).map((resource) => (
+                <ResourceCard
+                  key={resource.id}
+                  icon={resource.icon || '🌿'}
+                  category={(resource.category || 'WELLNESS').toUpperCase()}
+                  title={resource.title}
+                  description={resource.description}
+                  duration={resource.type === 'video' ? 'Watch video' : 'Read article'}
+                  isVideo={resource.type === 'video'}
+                  onClick={() => navigate('/resources')}
+                />
+              ))}
 
-            <ResourceCard
-              icon="😴"
-              category="SLEEP"
-              title="Better sleep habits for students"
-              duration="7 min"
-            />
+            </div>
 
-            <ResourceCard
-              icon="🌸"
-              category="SELF-CARE"
-              title="Reset after a stressful day"
-              duration="6 min"
-            />
+          ) : (
 
-          </div>
+            <div className="resource-empty-state">
+
+              <div className="resource-empty-icon">
+                🌱
+              </div>
+
+              <div>
+                <h3>
+                  {recommendationInfo?.has_checkin
+                    ? 'Your resources are being prepared'
+                    : 'Start with a wellbeing check-in'}
+                </h3>
+
+                <p>
+                  {recommendationInfo?.has_checkin
+                    ? 'Visit the Resources page to explore wellness guides and exercises.'
+                    : 'A check-in helps MindEase understand what kind of support may be most useful for you.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="resource-empty-action"
+                onClick={() => navigate(
+                  recommendationInfo?.has_checkin
+                    ? '/resources'
+                    : '/checkin'
+                )}
+              >
+                {recommendationInfo?.has_checkin
+                  ? 'Explore resources →'
+                  : 'Complete check-in →'}
+              </button>
+
+            </div>
+
+          )}
 
         </section>
 
@@ -972,10 +1071,24 @@ function ResourceCard({
   icon,
   category,
   title,
-  duration
+  description,
+  duration,
+  isVideo = false,
+  onClick
 }) {
   return (
-    <article className="resource-card">
+    <article
+      className="resource-card"
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault()
+          onClick()
+        }
+      }}
+    >
 
       <div className="resource-thumbnail">
 
@@ -985,9 +1098,14 @@ function ResourceCard({
 
         <button
           className="resource-play"
-          aria-label={`Play ${title}`}
+          aria-label={isVideo ? `Watch ${title}` : `Open ${title}`}
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onClick?.()
+          }}
         >
-          ▶
+          {isVideo ? '▶' : '→'}
         </button>
 
       </div>
@@ -1000,8 +1118,14 @@ function ResourceCard({
 
         <h3>{title}</h3>
 
+        {description && (
+          <p className="resource-description">
+            {description}
+          </p>
+        )}
+
         <div className="resource-meta">
-          <span>▶ Watch</span>
+          <span>Read resource</span>
           <span>{duration}</span>
         </div>
 
