@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import StudentSidebar from '../components/StudentSidebar'
@@ -26,14 +26,34 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
   const [weeklyDigestMessage, setWeeklyDigestMessage] = useState('')
   const [weeklyDigestError, setWeeklyDigestError] = useState('')
 
+  const [notifications, setNotifications] = useState([])
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [notificationOpen, setNotificationOpen] = useState(false)
+  const [notificationLoading, setNotificationLoading] = useState(false)
+  const notificationRef = useRef(null)
+
 
   useEffect(() => {
     loadDashboardData()
   }, [])
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setNotificationOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
   const loadDashboardData = async () => {
   try {
-    const [meRes, streakRes, latestRes, historyRes, recommendedRes, moodRes, digestRes] = await Promise.all([
+    const [meRes, streakRes, latestRes, historyRes, recommendedRes, moodRes, digestRes, notificationsRes] = await Promise.all([
       fetch(`${API}/me`, {
     credentials: 'include'
      }),
@@ -58,6 +78,10 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
       }),
 
       fetch(`${API}/weekly-digest`, {
+        credentials: 'include'
+      }),
+
+      fetch(`${API}/notifications`, {
         credentials: 'include'
       })
     ])
@@ -97,6 +121,12 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
     if (digestRes.ok) {
       const digestData = await digestRes.json()
       setWeeklyDigestEnabled(Boolean(digestData.enabled))
+    }
+
+    if (notificationsRes.ok) {
+      const notificationData = await notificationsRes.json()
+      setNotifications(notificationData.notifications || [])
+      setUnreadNotificationCount(notificationData.unread_count || 0)
     }
 
     setWeeklyDigestLoading(false)
@@ -179,6 +209,136 @@ const [recommendationInfo, setRecommendationInfo] = useState(null)
     } finally {
       setWeeklyDigestTesting(false)
     }
+  }
+
+
+  const loadNotifications = async () => {
+    setNotificationLoading(true)
+
+    try {
+      const response = await fetch(`${API}/notifications`, {
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Could not load notifications.')
+      }
+
+      const data = await response.json()
+      setNotifications(data.notifications || [])
+      setUnreadNotificationCount(data.unread_count || 0)
+    } catch (error) {
+      console.error('Notification loading error:', error)
+    } finally {
+      setNotificationLoading(false)
+    }
+  }
+
+  const markNotificationRead = async (notificationId) => {
+    try {
+      const response = await fetch(
+        `${API}/notifications/${notificationId}/read`,
+        {
+          method: 'PUT',
+          credentials: 'include'
+        }
+      )
+
+      if (!response.ok) return
+
+      setNotifications(previous =>
+        previous.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, is_read: true }
+            : notification
+        )
+      )
+
+      setUnreadNotificationCount(count => Math.max(0, count - 1))
+    } catch (error) {
+      console.error('Mark notification read error:', error)
+    }
+  }
+
+  const markAllNotificationsRead = async () => {
+    try {
+      const response = await fetch(`${API}/notifications/read-all`, {
+        method: 'PUT',
+        credentials: 'include'
+      })
+
+      if (!response.ok) return
+
+      setNotifications(previous =>
+        previous.map(notification => ({
+          ...notification,
+          is_read: true
+        }))
+      )
+      setUnreadNotificationCount(0)
+    } catch (error) {
+      console.error('Mark all notifications read error:', error)
+    }
+  }
+
+  const deleteNotification = async (notificationId) => {
+    try {
+      const response = await fetch(
+        `${API}/notifications/${notificationId}`,
+        {
+          method: 'DELETE',
+          credentials: 'include'
+        }
+      )
+
+      if (!response.ok) return
+
+      setNotifications(previous =>
+        previous.filter(notification => notification.id !== notificationId)
+      )
+
+      setUnreadNotificationCount(count => {
+        const deleted = notifications.find(
+          notification => notification.id === notificationId
+        )
+        return deleted?.is_read ? count : Math.max(0, count - 1)
+      })
+    } catch (error) {
+      console.error('Delete notification error:', error)
+    }
+  }
+
+  const formatNotificationTime = (value) => {
+    if (!value) return ''
+
+    const notificationDate = new Date(value)
+    const now = new Date()
+    const seconds = Math.floor((now - notificationDate) / 1000)
+
+    if (seconds < 60) return 'Just now'
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} day${Math.floor(seconds / 86400) === 1 ? '' : 's'} ago`
+
+    return notificationDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const getNotificationIcon = (type) => {
+    const icons = {
+      welcome: '🌱',
+      appointment: '📅',
+      resource: '📚',
+      goal: '🌟',
+      community: '💬',
+      wellbeing: '💛',
+      digest: '✉️',
+      general: '🔔'
+    }
+
+    return icons[type] || icons.general
   }
 
   const getRiskText = () => {
@@ -309,14 +469,106 @@ const socialPercentage = Math.min(
 
   <div className="dashboard-header-actions">
 
-    <button
-      className="header-icon-button"
-      aria-label="Notifications"
-      type="button"
-    >
-      ♡
-      <span className="notification-dot"></span>
-    </button>
+    <div className="notification-center" ref={notificationRef}>
+      <button
+        className={`header-icon-button ${notificationOpen ? 'is-open' : ''}`}
+        aria-label="Notifications"
+        aria-expanded={notificationOpen}
+        type="button"
+        onClick={() => {
+          const nextOpen = !notificationOpen
+          setNotificationOpen(nextOpen)
+          if (nextOpen) loadNotifications()
+        }}
+      >
+        ♡
+        {unreadNotificationCount > 0 && (
+          <span className="notification-dot">
+            {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+          </span>
+        )}
+      </button>
+
+      {notificationOpen && (
+        <div className="notification-dropdown">
+          <div className="notification-dropdown-header">
+            <div>
+              <span className="notification-kicker">YOUR UPDATES</span>
+              <h3>Notifications</h3>
+            </div>
+
+            <button
+              type="button"
+              className="notification-mark-all"
+              onClick={markAllNotificationsRead}
+              disabled={unreadNotificationCount === 0}
+            >
+              Mark all read
+            </button>
+          </div>
+
+          <div className="notification-list">
+            {notificationLoading ? (
+              <div className="notification-empty">
+                <span className="notification-empty-icon">🌿</span>
+                <p>Loading your updates...</p>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="notification-empty">
+                <span className="notification-empty-icon">🌷</span>
+                <h4>You're all caught up</h4>
+                <p>Important MindEase updates will appear here.</p>
+              </div>
+            ) : (
+              notifications.map(notification => (
+                <article
+                  key={notification.id}
+                  className={`notification-item ${
+                    notification.is_read ? 'is-read' : 'is-unread'
+                  }`}
+                  onClick={() => {
+                    if (!notification.is_read) {
+                      markNotificationRead(notification.id)
+                    }
+                  }}
+                >
+                  <div className="notification-item-icon">
+                    {getNotificationIcon(notification.type)}
+                  </div>
+
+                  <div className="notification-item-content">
+                    <div className="notification-item-topline">
+                      <h4>{notification.title}</h4>
+                      {!notification.is_read && (
+                        <span className="notification-unread-indicator" />
+                      )}
+                    </div>
+
+                    <p>{notification.message}</p>
+
+                    <div className="notification-item-footer">
+                      <span>{formatNotificationTime(notification.created_at)}</span>
+
+                      <button
+                        type="button"
+                        className="notification-delete"
+                        aria-label={`Delete ${notification.title}`}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          deleteNotification(notification.id)
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
 
     <button
       className="profile-mini"

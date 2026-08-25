@@ -87,6 +87,16 @@ export default function CounsellorDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // ==========================================================
+  // COMMUNITY MODERATION
+  // ==========================================================
+
+  const [flaggedPosts, setFlaggedPosts] = useState([])
+  const [moderationLoading, setModerationLoading] = useState(true)
+  const [moderationError, setModerationError] = useState('')
+  const [moderationActionId, setModerationActionId] = useState(null)
+  const [moderationMessage, setModerationMessage] = useState('')
+
 
   // ==========================================================
   // LOAD DATA
@@ -125,8 +135,36 @@ export default function CounsellorDashboard() {
   }
 
 
+  const loadModeration = async () => {
+    try {
+      setModerationLoading(true)
+      setModerationError('')
+
+      const response = await api.get(
+        '/counsellor/community/moderation'
+      )
+
+      setFlaggedPosts(
+        response.data?.posts || []
+      )
+    } catch (err) {
+      console.error(
+        'Community moderation error:',
+        err
+      )
+
+      setModerationError(
+        err.response?.data?.error ||
+        'Unable to load flagged community posts.'
+      )
+    } finally {
+      setModerationLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadDashboard()
+    loadModeration()
   }, [])
 
 
@@ -139,6 +177,76 @@ export default function CounsellorDashboard() {
     await logout()
 
     navigate('/login')
+  }
+
+  // ==========================================================
+  // COMMUNITY MODERATION ACTIONS
+  // ==========================================================
+
+  const handleRestorePost = async (postId) => {
+    try {
+      setModerationActionId(postId)
+      setModerationMessage('')
+
+      await api.patch(
+        `/counsellor/community/${postId}/restore`
+      )
+
+      setModerationMessage(
+        'Post restored successfully.'
+      )
+
+      await loadModeration()
+    } catch (err) {
+      console.error(
+        'Restore community post error:',
+        err
+      )
+
+      setModerationMessage(
+        err.response?.data?.error ||
+        'Unable to restore the post.'
+      )
+    } finally {
+      setModerationActionId(null)
+    }
+  }
+
+  const handleRemovePost = async (postId) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to remove this community post? This action cannot be undone.'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setModerationActionId(postId)
+      setModerationMessage('')
+
+      await api.delete(
+        `/counsellor/community/${postId}/remove`
+      )
+
+      setModerationMessage(
+        'Post removed successfully.'
+      )
+
+      await loadModeration()
+    } catch (err) {
+      console.error(
+        'Remove community post error:',
+        err
+      )
+
+      setModerationMessage(
+        err.response?.data?.error ||
+        'Unable to remove the post.'
+      )
+    } finally {
+      setModerationActionId(null)
+    }
   }
 
 
@@ -935,6 +1043,251 @@ export default function CounsellorDashboard() {
 
           </article>
 
+
+        </section>
+
+
+        {/* ====================================================
+            COMMUNITY MODERATION
+        ==================================================== */}
+
+        <section className="moderation-section">
+
+          <div className="moderation-header">
+
+            <div>
+              <span className="card-kicker">
+                COMMUNITY SAFETY
+              </span>
+
+              <h3>
+                Community moderation
+              </h3>
+
+              <p>
+                Review community posts that have been
+                flagged for counsellor attention.
+              </p>
+            </div>
+
+            <div className="moderation-header-right">
+
+              <span className="moderation-count">
+                {flaggedPosts.length}{' '}
+                {flaggedPosts.length === 1
+                  ? 'pending review'
+                  : 'pending reviews'}
+              </span>
+
+              <button
+                type="button"
+                className="moderation-refresh"
+                onClick={loadModeration}
+                disabled={moderationLoading}
+              >
+                ↻ Refresh
+              </button>
+
+            </div>
+
+          </div>
+
+
+          {moderationMessage && (
+            <div
+              className={
+                moderationMessage.includes('successfully')
+                  ? 'moderation-feedback success'
+                  : 'moderation-feedback error'
+              }
+            >
+              <span>
+                {moderationMessage.includes('successfully')
+                  ? '✓'
+                  : '⚠️'}
+              </span>
+
+              {moderationMessage}
+            </div>
+          )}
+
+
+          {moderationLoading ? (
+
+            <div className="moderation-empty">
+              <div className="moderation-spinner"></div>
+
+              <p>
+                Loading flagged posts...
+              </p>
+            </div>
+
+          ) : moderationError ? (
+
+            <div className="moderation-empty moderation-error-state">
+
+              <div className="moderation-empty-icon">
+                ⚠️
+              </div>
+
+              <h4>
+                Unable to load moderation queue
+              </h4>
+
+              <p>
+                {moderationError}
+              </p>
+
+              <button
+                type="button"
+                className="moderation-retry-button"
+                onClick={loadModeration}
+              >
+                Try Again
+              </button>
+
+            </div>
+
+          ) : flaggedPosts.length === 0 ? (
+
+            <div className="moderation-empty">
+
+              <div className="moderation-empty-icon safe">
+                ✓
+              </div>
+
+              <h4>
+                No posts waiting for review
+              </h4>
+
+              <p>
+                Flagged community posts will appear here
+                when students report them.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div className="moderation-list">
+
+              {flaggedPosts.map(post => {
+
+                const postDate = post.created_at
+                  ? new Date(post.created_at)
+                  : null
+
+                const formattedDate =
+                  postDate && !Number.isNaN(postDate.getTime())
+                    ? postDate.toLocaleDateString(
+                        undefined,
+                        {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }
+                      )
+                    : 'Recently'
+
+                const formattedTime =
+                  postDate && !Number.isNaN(postDate.getTime())
+                    ? postDate.toLocaleTimeString(
+                        undefined,
+                        {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }
+                      )
+                    : ''
+
+                const isActing =
+                  moderationActionId === post.id
+
+                return (
+                  <article
+                    className="moderation-post"
+                    key={post.id}
+                  >
+
+                    <div className="moderation-post-top">
+
+                      <div className="moderation-post-author">
+
+                        <div className="moderation-author-icon">
+                          👤
+                        </div>
+
+                        <div>
+                          <strong>
+                            Anonymous Student
+                          </strong>
+
+                          <span>
+                            {formattedDate}
+                            {formattedTime
+                              ? ` · ${formattedTime}`
+                              : ''}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      <span className="moderation-status">
+                        ⚠ Flagged
+                      </span>
+
+                    </div>
+
+
+                    <div className="moderation-content">
+                      {post.content}
+                    </div>
+
+
+                    <div className="moderation-post-footer">
+
+                      <span className="moderation-privacy">
+                        🔒 Student identity protected
+                      </span>
+
+                      <div className="moderation-actions">
+
+                        <button
+                          type="button"
+                          className="restore-post-button"
+                          onClick={() =>
+                            handleRestorePost(post.id)
+                          }
+                          disabled={isActing}
+                        >
+                          {isActing
+                            ? 'Processing...'
+                            : '✓ Restore Post'}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="remove-post-button"
+                          onClick={() =>
+                            handleRemovePost(post.id)
+                          }
+                          disabled={isActing}
+                        >
+                          {isActing
+                            ? 'Processing...'
+                            : 'Remove Post'}
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </article>
+                )
+              })}
+
+            </div>
+          )}
 
         </section>
 

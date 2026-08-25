@@ -184,6 +184,56 @@ class User(db.Model):
 
 
 # ============================================================
+# TABLE — NOTIFICATIONS
+# Stores student/counsellor/admin notifications and read state.
+# ============================================================
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        nullable=False,
+        index=True
+    )
+
+    title = db.Column(db.String(160), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+
+    notification_type = db.Column(
+        db.String(40),
+        default='general',
+        nullable=False
+    )
+
+    is_read = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+        index=True
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'message': self.message,
+            'type': self.notification_type,
+            'is_read': bool(self.is_read),
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+# ============================================================
 # TABLE — WEEKLY EMAIL DIGEST PREFERENCES
 # Stores whether a student has opted into the weekly email digest.
 # No journal content is stored here.
@@ -700,6 +750,144 @@ def admin_required(f):
         return f(*args, **kwargs)
 
     return decorated
+
+# ============================================================
+# NOTIFICATION HELPER
+# ============================================================
+
+def create_notification(user_id, title, message, notification_type='general'):
+    """Create one notification for a user."""
+    notification = Notification(
+        user_id=user_id,
+        title=str(title)[:160],
+        message=str(message),
+        notification_type=str(notification_type or 'general')[:40],
+        is_read=False
+    )
+    db.session.add(notification)
+    db.session.commit()
+    return notification
+
+
+# ============================================================
+# STUDENT NOTIFICATION CENTER
+# ============================================================
+
+@app.route('/api/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    """Return the newest notifications for the logged-in user."""
+    user_id = session['user_id']
+
+# Give an existing account a useful first notification so the new center
+    # is not blank after deployment. It is created only once per user.
+    if Notification.query.filter_by(user_id=user_id).count() == 0:
+        create_notification(
+            user_id,
+            'Welcome to MindEase',
+            'Your notification center is ready. Important wellbeing updates will appear here.',
+            'welcome'
+        )
+
+    limit = request.args.get('limit', 30, type=int) or 30
+    limit = max(1, min(limit, 50))
+
+    notifications = (
+        Notification.query
+        .filter_by(user_id=user_id)
+        .order_by(Notification.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    unread_count = Notification.query.filter_by(
+        user_id=user_id,
+        is_read=False
+    ).count()
+
+    return jsonify({
+        'notifications': [item.to_dict() for item in notifications],
+        'unread_count': unread_count
+    })
+
+
+@app.route('/api/notifications/unread-count', methods=['GET'])
+@login_required
+def get_notification_unread_count():
+    """Return only the unread notification count for the header badge."""
+    count = Notification.query.filter_by(
+        user_id=session['user_id'],
+        is_read=False
+    ).count()
+
+    return jsonify({'unread_count': count})
+
+
+@app.route('/api/notifications/<int:notification_id>/read', methods=['PUT', 'PATCH'])
+@login_required
+def mark_notification_read(notification_id):
+    """Mark one notification as read, only if it belongs to the user."""
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=session['user_id']
+    ).first()
+
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
+
+    notification.is_read = True
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'notification': notification.to_dict()
+    })
+
+
+@app.route('/api/notifications/read-all', methods=['PUT', 'PATCH'])
+@login_required
+def mark_all_notifications_read():
+    """Mark every notification belonging to the logged-in user as read."""
+    updated = (
+        Notification.query
+        .filter_by(user_id=session['user_id'], is_read=False)
+        .update({'is_read': True}, synchronize_session=False)
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'updated': updated,
+        'unread_count': 0
+    })
+
+
+@app.route('/api/notifications/<int:notification_id>', methods=['DELETE'])
+@login_required
+def delete_notification(notification_id):
+    """Delete one notification belonging to the logged-in user."""
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=session['user_id']
+    ).first()
+
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
+
+    db.session.delete(notification)
+    db.session.commit()
+
+    unread_count = Notification.query.filter_by(
+        user_id=session['user_id'],
+        is_read=False
+    ).count()
+
+    return jsonify({
+        'success': True,
+        'unread_count': unread_count
+    })
+
 
 # ============================================================
 # WEEKLY EMAIL DIGEST
@@ -5876,7 +6064,196 @@ def counsellor_export_report():
 
         }), 500
 
-            
+# ============================================================
+# COUNSELLOR — COMMUNITY BOARD MODERATION
+# ============================================================
+
+@app.route('/api/counsellor/community/moderation', methods=['GET'])
+@counsellor_required
+def counsellor_get_flagged_posts():
+    """
+    Return all posts that have been flagged by students.
+
+    Important privacy rule:
+    - Counsellors can review the content.
+    - Student identity is NOT exposed to the frontend.
+    - The internal user_id is only used when sending
+      a moderation notification.
+    """
+
+    try:
+        flagged_posts = (
+            CommunityPost.query
+            .filter_by(is_flagged=True)
+            .order_by(CommunityPost.created_at.desc())
+            .all()
+        )
+
+        result = []
+
+        for post in flagged_posts:
+            result.append({
+                'id': post.id,
+
+                # Keep the student anonymous in the UI
+                'author': 'Anonymous Student',
+
+                'content': post.content,
+
+                'created_at': (
+                    post.created_at.isoformat()
+                    if post.created_at
+                    else None
+                ),
+
+                'status': 'pending'
+            })
+
+        return jsonify({
+            'success': True,
+            'count': len(result),
+            'posts': result
+        }), 200
+
+    except Exception as e:
+
+        print(
+            '❌ Community moderation load error:',
+            e
+        )
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load flagged community posts'
+        }), 500
+
+
+# ============================================================
+# COUNSELLOR — RESTORE FLAGGED POST
+# ============================================================
+
+@app.route(
+    '/api/counsellor/community/<int:post_id>/restore',
+    methods=['PATCH']
+)
+@counsellor_required
+def counsellor_restore_post(post_id):
+
+    try:
+
+        post = CommunityPost.query.filter_by(
+            id=post_id,
+            is_flagged=True
+        ).first()
+
+        if not post:
+            return jsonify({
+                'error': 'Flagged post not found'
+            }), 404
+
+        # Make the post visible on the community board again
+        post.is_flagged = False
+
+        # Save notification before committing
+        notification = Notification(
+            user_id=post.user_id,
+            title='Community post reviewed',
+            message=(
+                'Your community post has been reviewed '
+                'by a counsellor and restored to the '
+                'community board.'
+            ),
+            notification_type='community_moderation',
+            is_read=False
+        )
+
+        db.session.add(notification)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Post restored successfully'
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        print(
+            '❌ Community post restore error:',
+            e
+        )
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to restore post'
+        }), 500
+
+
+# ============================================================
+# COUNSELLOR — REMOVE COMMUNITY POST
+# ============================================================
+
+@app.route(
+    '/api/counsellor/community/<int:post_id>/remove',
+    methods=['DELETE']
+)
+@counsellor_required
+def counsellor_remove_post(post_id):
+
+    try:
+
+        post = CommunityPost.query.filter_by(
+            id=post_id,
+            is_flagged=True
+        ).first()
+
+        if not post:
+            return jsonify({
+                'error': 'Flagged post not found'
+            }), 404
+
+        # Save the student ID before deleting the post
+        student_id = post.user_id
+
+        # Notify the student before deleting the post
+        notification = Notification(
+            user_id=student_id,
+            title='Community post reviewed',
+            message=(
+                'Your community post has been reviewed '
+                'by a counsellor and removed because it '
+                'did not meet the community guidelines.'
+            ),
+            notification_type='community_moderation',
+            is_read=False
+        )
+
+        db.session.add(notification)
+
+        # Delete the inappropriate post
+        db.session.delete(post)
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Post removed successfully'
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        print(
+            '❌ Community post removal error:',
+            e
+        )
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to remove post'
+        }), 500            
 
 
     
