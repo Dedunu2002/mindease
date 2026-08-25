@@ -17,9 +17,28 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Keep the dashboard greeting synced with the user's local time.
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours()
+
+    if (hour >= 5 && hour < 12) return 'Good morning'
+    if (hour >= 12 && hour < 17) return 'Good afternoon'
+    if (hour >= 17 && hour < 21) return 'Good evening'
+    return 'Good night'
+  }
+
+  const [timeGreeting, setTimeGreeting] = useState(getTimeGreeting)
 
   useEffect(() => {
     loadAdminData()
+
+    // Re-check the greeting every minute so it changes automatically
+    // even when the admin dashboard stays open for a long time.
+    const greetingTimer = setInterval(() => {
+      setTimeGreeting(getTimeGreeting())
+    }, 60 * 1000)
+
+    return () => clearInterval(greetingTimer)
   }, [])
 
 
@@ -152,7 +171,7 @@ export default function AdminDashboard() {
             </div>
 
             <h1>
-              Good morning,{' '}
+              {timeGreeting},{' '}
               <span>
                 {currentUser?.name?.split(' ')[0] || 'Admin'}
               </span> 👋

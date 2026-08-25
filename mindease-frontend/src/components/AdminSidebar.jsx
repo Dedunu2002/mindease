@@ -30,21 +30,25 @@ export default function AdminSidebar() {
         {icon}
       </span>
 
-      <span>{label}</span>
+      <span className="admin-nav-label">
+        {label}
+      </span>
     </NavLink>
   )
 
   return (
     <aside className="admin-sidebar">
 
-      {/* BRAND */}
+      {/* =========================================
+          BRAND
+      ========================================= */}
       <div className="admin-brand">
 
         <div className="admin-brand-icon">
           🧠
         </div>
 
-        <div>
+        <div className="admin-brand-copy">
           <div className="admin-brand-name">
             MindEase
           </div>
@@ -57,7 +61,9 @@ export default function AdminSidebar() {
       </div>
 
 
-      {/* NAVIGATION */}
+      {/* =========================================
+          NAVIGATION
+      ========================================= */}
       <nav className="admin-sidebar-nav">
 
         <div className="admin-sidebar-label">
@@ -87,6 +93,12 @@ export default function AdminSidebar() {
           'Counsellors'
         )}
 
+        {navItem(
+          '/admin/exercises',
+          '🧘',
+          'Exercise Content'
+        )}
+
 
         <div className="admin-sidebar-label admin-label-spaced">
           SYSTEM
@@ -99,6 +111,12 @@ export default function AdminSidebar() {
         )}
 
         {navItem(
+          '/admin/system-logs',
+          '📝',
+          'System Logs'
+        )}
+
+        {navItem(
           '/admin/settings',
           '⚙',
           'Settings'
@@ -107,7 +125,9 @@ export default function AdminSidebar() {
       </nav>
 
 
-      {/* PROFILE */}
+      {/* =========================================
+          USER / LOGOUT
+      ========================================= */}
       <div className="admin-sidebar-footer">
 
         <div className="admin-profile">
@@ -124,11 +144,17 @@ export default function AdminSidebar() {
         </div>
 
         <button
+          type="button"
           className="admin-logout"
           onClick={handleLogout}
         >
-          <span>↪</span>
-          Logout
+          <span className="admin-logout-icon">
+            ↪
+          </span>
+
+          <span>
+            Logout
+          </span>
         </button>
 
       </div>

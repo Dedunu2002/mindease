@@ -1,0 +1,773 @@
+/* ============================================================
+   COUNSELLOR RESOURCE MANAGEMENT
+   Matches the existing MindEase counsellor green/lavender theme.
+   ============================================================ */
+
+.counsellor-resources-page {
+  min-height: 100vh;
+  padding: 30px 34px 46px;
+  background: #FAFAFB;
+  color: #37343A;
+}
+
+.resource-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.resource-kicker {
+  display: block;
+  color: #78917E;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.15px;
+}
+
+.resource-page-header h1 {
+  margin: 5px 0 6px;
+  color: #35323A;
+  font-size: 27px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.resource-page-header p {
+  max-width: 620px;
+  margin: 0;
+  color: #8A858E;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.resource-add-button,
+.resource-state-button,
+.resource-save-button {
+  border: 0;
+  border-radius: 11px;
+  background: #6D9076;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.resource-add-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 15px;
+  box-shadow: 0 5px 15px rgba(74, 104, 81, 0.13);
+}
+
+.resource-add-button span {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.resource-add-button:hover,
+.resource-state-button:hover,
+.resource-save-button:hover:not(:disabled) {
+  background: #5C7F65;
+  transform: translateY(-1px);
+}
+
+.resource-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.resource-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #E8E4EA;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(45, 38, 51, 0.025);
+}
+
+.resource-summary-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #EEE9FF;
+  color: #725D9E;
+  font-size: 17px;
+}
+
+.active-card .resource-summary-icon {
+  background: #E5F4E8;
+  color: #568061;
+}
+
+.inactive-card .resource-summary-icon {
+  background: #F7F1E7;
+  color: #94784A;
+}
+
+.resource-summary-card span {
+  display: block;
+  color: #8E8991;
+  font-size: 10px;
+}
+
+.resource-summary-card strong {
+  display: block;
+  margin-top: 3px;
+  color: #37343A;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.resource-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 170px 150px auto;
+  gap: 9px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid #E8E4EA;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.resource-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 11px;
+  border: 1px solid #E4E0E6;
+  border-radius: 9px;
+  background: #FCFCFC;
+}
+
+.resource-search-box span {
+  color: #8D8991;
+  font-size: 18px;
+}
+
+.resource-search-box input,
+.resource-toolbar select {
+  width: 100%;
+  min-height: 37px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #555159;
+  font: inherit;
+  font-size: 11px;
+}
+
+.resource-toolbar select {
+  padding: 0 9px;
+  border: 1px solid #E4E0E6;
+  border-radius: 9px;
+  background: #FCFCFC;
+}
+
+.resource-refresh-button {
+  min-height: 37px;
+  padding: 0 13px;
+  border: 1px solid #DCE7DE;
+  border-radius: 9px;
+  background: #F4F9F5;
+  color: #55735D;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resource-refresh-button:hover:not(:disabled) {
+  background: #E8F4EA;
+}
+
+.resource-refresh-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.resource-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.resource-notice.success {
+  border: 1px solid #D8EADB;
+  background: #F1F8F3;
+  color: #4D7257;
+}
+
+.resource-notice.error,
+.resource-form-error {
+  border: 1px solid #F0D9D9;
+  background: #FFF5F5;
+  color: #A85D5D;
+}
+
+.resource-notice.error {
+  display: flex;
+}
+
+.resource-list-section {
+  padding: 20px;
+  border: 1px solid #E8E4EA;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(45, 38, 51, 0.025);
+}
+
+.resource-list-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+.resource-list-heading h2 {
+  margin: 4px 0 0;
+  color: #39353C;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.resource-result-count {
+  color: #938E96;
+  font-size: 10px;
+}
+
+.resource-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.managed-resource-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #E9E5EA;
+  border-radius: 15px;
+  background: #FCFCFC;
+  transition: 0.2s ease;
+}
+
+.managed-resource-card:hover {
+  border-color: #D5E1D8;
+  box-shadow: 0 7px 20px rgba(45, 38, 51, 0.045);
+  transform: translateY(-1px);
+}
+
+.managed-resource-card.is-inactive {
+  opacity: 0.72;
+  background: #FAFAFA;
+}
+
+.managed-resource-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.managed-resource-icon {
+  width: 39px;
+  height: 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: #EEE9FF;
+  font-size: 17px;
+}
+
+.managed-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.managed-status.active {
+  background: #E9F6EC;
+  color: #50775A;
+}
+
+.managed-status.inactive {
+  background: #F5EEE4;
+  color: #8D744E;
+}
+
+.managed-status.active span {
+  color: #72A17C;
+}
+
+.managed-status.inactive span {
+  color: #B09261;
+}
+
+.managed-resource-category {
+  margin-top: 13px;
+  color: #78917E;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.managed-resource-card h3 {
+  margin: 5px 0 6px;
+  color: #39353C;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.managed-resource-description {
+  min-height: 55px;
+  margin: 0;
+  color: #817B84;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.managed-resource-type {
+  margin-top: 11px;
+  color: #9A949C;
+  font-size: 9px;
+}
+
+.managed-resource-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 36px;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.resource-edit-button,
+.resource-toggle-button,
+.resource-delete-button {
+  min-height: 33px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.resource-edit-button {
+  border: 1px solid #DDD5F0;
+  background: #F6F2FF;
+  color: #6B5794;
+}
+
+.resource-edit-button:hover:not(:disabled) {
+  background: #EEE8FF;
+}
+
+.resource-toggle-button {
+  border: 1px solid #D5E4D8;
+  background: #F2F8F3;
+  color: #56735D;
+}
+
+.resource-toggle-button:hover:not(:disabled) {
+  background: #E5F3E8;
+}
+
+.resource-delete-button {
+  border: 1px solid #EBCFCF;
+  background: #FFF5F5;
+  color: #A45F5F;
+}
+
+.resource-delete-button:hover:not(:disabled) {
+  background: #FFEAEA;
+}
+
+.resource-edit-button:disabled,
+.resource-toggle-button:disabled,
+.resource-delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.managed-resource-link {
+  display: block;
+  margin-top: 10px;
+  color: #688C73;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.managed-resource-link:hover {
+  text-decoration: underline;
+}
+
+.resource-state {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 30px;
+}
+
+.resource-state h3 {
+  margin: 0 0 5px;
+  color: #454149;
+  font-size: 14px;
+}
+
+.resource-state p {
+  max-width: 350px;
+  margin: 0;
+  color: #908A93;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.resource-state-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 11px;
+  border-radius: 50%;
+  background: #EEE9FF;
+  font-size: 19px;
+}
+
+.resource-state-button {
+  margin-top: 13px;
+  padding: 9px 14px;
+}
+
+.resource-spinner {
+  width: 29px;
+  height: 29px;
+  margin-bottom: 12px;
+  border: 3px solid #DCEADE;
+  border-top-color: #6D9076;
+  border-radius: 50%;
+  animation: resource-spin 0.8s linear infinite;
+}
+
+@keyframes resource-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.resource-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(40, 35, 44, 0.28);
+  backdrop-filter: blur(5px);
+}
+
+.resource-modal {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  padding: 23px;
+  border: 1px solid #E8E4EA;
+  border-radius: 19px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(39, 32, 44, 0.16);
+}
+
+.resource-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 17px;
+}
+
+.resource-modal-header h2 {
+  margin: 5px 0 5px;
+  color: #38343B;
+  font-size: 20px;
+}
+
+.resource-modal-header p {
+  margin: 0;
+  color: #8A858E;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.resource-modal-close {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid #E5E0E7;
+  border-radius: 9px;
+  background: #FAFAFA;
+  color: #77717B;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.resource-form-error {
+  margin-bottom: 13px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.resource-modal form label {
+  display: block;
+  margin-bottom: 13px;
+  color: #59535C;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.resource-modal form label span {
+  color: #9A949C;
+  font-weight: 500;
+}
+
+.resource-modal input,
+.resource-modal textarea,
+.resource-modal select {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 10px 11px;
+  border: 1px solid #E2DEE5;
+  border-radius: 9px;
+  outline: none;
+  background: #FCFCFC;
+  color: #4B464F;
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+}
+
+.resource-modal input:focus,
+.resource-modal textarea:focus,
+.resource-modal select:focus {
+  border-color: #B7CCBB;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(116, 151, 125, 0.08);
+}
+
+.resource-form-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 11px;
+}
+
+.resource-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 15px;
+  border-top: 1px solid #EEEAEF;
+}
+
+.resource-cancel-button,
+.resource-save-button {
+  min-height: 37px;
+  padding: 0 15px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.resource-cancel-button {
+  border: 1px solid #DDD8E0;
+  background: #fff;
+  color: #6C6670;
+}
+
+.resource-cancel-button:hover:not(:disabled) {
+  background: #F8F7F8;
+}
+
+.resource-save-button {
+  padding-left: 17px;
+  padding-right: 17px;
+}
+
+.resource-save-button:disabled,
+.resource-cancel-button:disabled,
+.resource-modal-close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1050px) {
+  .resource-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resource-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .resource-search-box {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .counsellor-resources-page {
+    padding: 22px 16px 36px;
+  }
+
+  .resource-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .resource-add-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .resource-summary-grid,
+  .resource-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-search-box {
+    grid-column: auto;
+  }
+
+  .resource-refresh-button {
+    width: 100%;
+  }
+
+  .resource-list-section {
+    padding: 15px;
+  }
+
+  .resource-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .counsellor-resources-page {
+    padding: 18px 12px 30px;
+  }
+
+  .resource-page-header h1 {
+    font-size: 23px;
+  }
+
+  .resource-modal-backdrop {
+    padding: 10px;
+  }
+
+  .resource-modal {
+    max-height: calc(100vh - 20px);
+    padding: 17px;
+    border-radius: 15px;
+  }
+
+  .resource-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .resource-cancel-button,
+  .resource-save-button {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   COUNSELLOR RESOURCES — SIDEBAR LAYOUT
+   Add this at the end of CounsellorResources.css
+   ============================================================ */
+
+.counsellor-resources-layout {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  background: #f7f9f7;
+}
+
+/* The resource content sits beside the fixed/sidebar navigation. */
+.counsellor-resources-main {
+  flex: 1;
+  min-width: 0;
+  margin-left: 238px;
+  min-height: 100vh;
+  padding: 28px 32px 42px;
+  box-sizing: border-box;
+}
+
+/* Keep the existing resource page styles working inside the main area. */
+.counsellor-resources-main .counsellor-resources-page {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+/* If the sidebar is fixed, this keeps the resource page from
+   touching it on smaller desktop widths. */
+@media (max-width: 1100px) {
+  .counsellor-resources-main {
+    margin-left: 220px;
+    padding: 24px 24px 36px;
+  }
+}
+
+@media (max-width: 820px) {
+  .counsellor-resources-layout {
+    display: block;
+  }
+
+  .counsellor-resources-main {
+    margin-left: 0;
+    padding: 86px 18px 30px;
+  }
+
+  .counsellor-resources-main .counsellor-resources-page {
+    max-width: none;
+  }
+}

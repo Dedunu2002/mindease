@@ -361,21 +361,7 @@ export default function CounsellorDashboard() {
 
         <div className="counsellor-brand">
 
-          <div className="counsellor-brand-icon">
-            🧑‍⚕️
-          </div>
-
-          <div>
-
-            <p className="dashboard-eyebrow">
-              COUNSELLOR PORTAL
-            </p>
-
-            <h1>
-              Campus Wellbeing
-            </h1>
-
-          </div>
+          
 
         </div>
 
@@ -408,12 +394,7 @@ export default function CounsellorDashboard() {
 
           </div>
 
-          <button
-            className="logout-button"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
+          
 
         </div>
 

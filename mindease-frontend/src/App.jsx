@@ -48,6 +48,7 @@ import CounsellorDashboard from './pages/CounsellorDashboard'
 import CounsellorAppointments from './pages/CounsellorAppointments'
 import CounsellorStudents from './pages/CounsellorStudents'
 import CounsellorReports from './pages/CounsellorReports'
+import CounsellorResources from './pages/CounsellorResources'
 
 // ============================================================
 // ADMIN PAGES
@@ -58,6 +59,8 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminCounsellors from './pages/admin/AdminCounsellors'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminSettings from './pages/admin/AdminSettings'
+import AdminExercises from './pages/admin/AdminExercises'
+import AdminSystemLogs from './pages/admin/AdminSystemLogs'
 
 
 // ============================================================
@@ -395,6 +398,18 @@ export default function App() {
 
 
         <Route
+          path="/counsellor-resources"
+          element={
+            <ProtectedRoute
+              allowedRoles={['counsellor']}
+            >
+              <CounsellorResources />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
           path="/counsellor-reports"
           element={
             <ProtectedRoute
@@ -453,6 +468,30 @@ export default function App() {
               allowedRoles={['admin']}
             >
               <AdminAnalytics />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/admin/exercises"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
+              <AdminExercises />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/admin/system-logs"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+            >
+              <AdminSystemLogs />
             </ProtectedRoute>
           }
         />

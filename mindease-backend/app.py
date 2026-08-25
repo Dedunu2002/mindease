@@ -30,6 +30,7 @@ from reportlab.platypus import (
     PageBreak
 )
 
+from sqlalchemy import inspect, text
 from functools import wraps
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -231,6 +232,128 @@ class Notification(db.Model):
             'is_read': bool(self.is_read),
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+
+
+# ============================================================
+# TABLE — SYSTEM / AUDIT LOG
+# Stores non-sensitive administrative and system activity.
+# Journal text, private wellbeing answers, and AI risk details
+# are intentionally NOT stored here.
+# ============================================================
+class SystemLog(db.Model):
+    __tablename__ = 'system_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        nullable=True
+    )
+
+    user_role = db.Column(
+        db.String(30),
+        nullable=True
+    )
+
+    action = db.Column(
+        db.String(80),
+        nullable=False
+    )
+
+    entity_type = db.Column(
+        db.String(50),
+        nullable=True
+    )
+
+    entity_id = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    description = db.Column(
+        db.String(500),
+        nullable=False
+    )
+
+    ip_address = db.Column(
+        db.String(64),
+        nullable=True
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def to_dict(self):
+        actor = None
+
+        if self.user_id:
+            try:
+                actor = User.query.get(self.user_id)
+            except Exception:
+                actor = None
+
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'user_name': actor.name if actor else 'System',
+            'user_role': self.user_role or (
+                actor.role if actor else 'system'
+            ),
+            'action': self.action,
+            'entity_type': self.entity_type,
+            'entity_id': self.entity_id,
+            'description': self.description,
+            'ip_address': self.ip_address,
+            'created_at': (
+                self.created_at.isoformat()
+                if self.created_at else None
+            )
+        }
+
+
+def create_system_log(
+    action,
+    description,
+    entity_type=None,
+    entity_id=None,
+    user_id=None,
+    user_role=None
+):
+    """
+    Create a privacy-conscious audit entry.
+
+    This helper intentionally records metadata only.
+    Never pass journal text, check-in answers, AI risk details,
+    community post content, or other private wellbeing content.
+    """
+
+    if user_id is None:
+        user_id = session.get('user_id')
+
+    if user_role is None:
+        user_role = session.get('user_role')
+
+    log = SystemLog(
+        user_id=user_id,
+        user_role=user_role,
+        action=str(action)[:80],
+        entity_type=(
+            str(entity_type)[:50]
+            if entity_type is not None else None
+        ),
+        entity_id=entity_id,
+        description=str(description)[:500],
+        ip_address=request.remote_addr
+    )
+
+    db.session.add(log)
+
+    return log
 
 
 # ============================================================
@@ -613,6 +736,7 @@ class Resource(db.Model):
     content     = db.Column(db.Text)       # longer article text
     url         = db.Column(db.String(300)) # optional external link
     icon        = db.Column(db.String(10), default='📄')
+    is_active   = db.Column(db.Boolean, default=True, nullable=False)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -631,7 +755,43 @@ class Resource(db.Model):
             'content':     self.content,
             'url':         self.url,
             'icon':        self.icon,
+            'is_active':   bool(self.is_active),
             'type':        resource_type,
+        }
+
+
+# ============================================================
+# TABLE — EXERCISE CONTENT
+# Admin-managed wellbeing exercise content.
+# ============================================================
+class Exercise(db.Model):
+    __tablename__ = 'exercises'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(60), nullable=False)
+    duration = db.Column(db.String(50), nullable=True)
+    instructions = db.Column(db.Text, nullable=False)
+    icon = db.Column(db.String(10), default='🧘')
+    media_url = db.Column(db.String(500), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'category': self.category,
+            'duration': self.duration,
+            'instructions': self.instructions,
+            'icon': self.icon,
+            'media_url': self.media_url,
+            'is_active': bool(self.is_active),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
 # ============================================================
@@ -750,6 +910,30 @@ def admin_required(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+# ============================================================
+# COUNSELLOR-ONLY ACCESS
+# ============================================================
+
+def counsellor_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+
+        if 'user_id' not in session:
+            return jsonify({
+                'error': 'Login required'
+            }), 401
+
+        if session.get('user_role') != 'counsellor':
+            return jsonify({
+                'error': 'Counsellor access required'
+            }), 403
+
+        return f(*args, **kwargs)
+
+    return decorated
+
 
 # ============================================================
 # NOTIFICATION HELPER
@@ -1000,6 +1184,7 @@ def _build_weekly_digest_data(user_id):
 
         resources = (
             Resource.query
+            .filter(Resource.is_active == True)
             .filter(Resource.category.in_(categories))
             .order_by(Resource.created_at.desc())
             .limit(2)
@@ -3460,7 +3645,7 @@ def get_resources():
     category = request.args.get('category')   # optional filter
     search   = request.args.get('search', '').strip().lower()
 
-    query = Resource.query
+    query = Resource.query.filter_by(is_active=True)
     if category and category != 'All':
         query = query.filter_by(category=category)
     if search:
@@ -3471,6 +3656,232 @@ def get_resources():
 
     resources = query.order_by(Resource.category, Resource.title).all()
     return jsonify([r.to_dict() for r in resources]), 200
+
+
+# ============================================================
+# COUNSELLOR — RESOURCE MANAGEMENT
+# ============================================================
+
+RESOURCE_CATEGORIES = [
+    'Anxiety',
+    'Sleep',
+    'Stress',
+    'Motivation',
+    'Loneliness'
+]
+
+
+def _resource_payload(data):
+    data = data or {}
+
+    title = str(data.get('title', '')).strip()
+    description = str(data.get('description', '')).strip()
+    category = str(data.get('category', '')).strip()
+    content = str(data.get('content', '') or '').strip()
+    url = str(data.get('url', '') or '').strip()
+    icon = str(data.get('icon', '') or '📄').strip()[:10]
+
+    if not title:
+        return None, 'Resource title is required.'
+    if len(title) > 200:
+        return None, 'Resource title must be 200 characters or fewer.'
+    if not description:
+        return None, 'Resource description is required.'
+    if not category:
+        return None, 'Resource category is required.'
+    if category not in RESOURCE_CATEGORIES:
+        return None, 'Invalid resource category.'
+    if len(url) > 300:
+        return None, 'Resource URL must be 300 characters or fewer.'
+
+    if url and not re.match(r'^https?://', url, re.IGNORECASE):
+        return None, 'URL must start with http:// or https://.'
+
+    return {
+        'title': title,
+        'description': description,
+        'category': category,
+        'content': content or None,
+        'url': url or None,
+        'icon': icon or '📄'
+    }, None
+
+
+@app.route('/api/counsellor/resources', methods=['GET'])
+@counsellor_required
+def counsellor_get_resources():
+    search = request.args.get('search', '').strip().lower()
+    category = request.args.get('category', 'All').strip()
+    status = request.args.get('status', 'all').strip().lower()
+
+    query = Resource.query
+
+    if category and category != 'All':
+        query = query.filter_by(category=category)
+
+    if status == 'active':
+        query = query.filter_by(is_active=True)
+    elif status == 'inactive':
+        query = query.filter_by(is_active=False)
+
+    if search:
+        query = query.filter(
+            Resource.title.ilike(f'%{search}%') |
+            Resource.description.ilike(f'%{search}%') |
+            Resource.content.ilike(f'%{search}%')
+        )
+
+    resources = query.order_by(
+        Resource.created_at.desc(),
+        Resource.title.asc()
+    ).all()
+
+    return jsonify({
+        'success': True,
+        'resources': [resource.to_dict() for resource in resources],
+        'categories': RESOURCE_CATEGORIES,
+        'total': len(resources)
+    }), 200
+
+
+@app.route('/api/counsellor/resources', methods=['POST'])
+@counsellor_required
+def counsellor_create_resource():
+    data, error = _resource_payload(request.get_json())
+
+    if error:
+        return jsonify({'error': error}), 400
+
+    existing = Resource.query.filter(
+        db.func.lower(Resource.title) == data['title'].lower()
+    ).first()
+
+    if existing:
+        return jsonify({'error': 'A resource with this title already exists.'}), 409
+
+    resource = Resource(**data, is_active=True)
+    db.session.add(resource)
+
+    db.session.flush()
+
+    create_system_log(
+        action='CREATE_RESOURCE',
+        description=f'Created resource "{resource.title}".',
+        entity_type='Resource',
+        entity_id=resource.id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Resource created successfully.',
+        'resource': resource.to_dict()
+    }), 201
+
+
+@app.route('/api/counsellor/resources/<int:resource_id>', methods=['PUT'])
+@counsellor_required
+def counsellor_update_resource(resource_id):
+    resource = Resource.query.get(resource_id)
+
+    if not resource:
+        return jsonify({'error': 'Resource not found.'}), 404
+
+    data, error = _resource_payload(request.get_json())
+
+    if error:
+        return jsonify({'error': error}), 400
+
+    duplicate = Resource.query.filter(
+        Resource.id != resource_id,
+        db.func.lower(Resource.title) == data['title'].lower()
+    ).first()
+
+    if duplicate:
+        return jsonify({'error': 'Another resource already uses this title.'}), 409
+
+    for key, value in data.items():
+        setattr(resource, key, value)
+
+    create_system_log(
+        action='UPDATE_RESOURCE',
+        description=f'Updated resource "{resource.title}".',
+        entity_type='Resource',
+        entity_id=resource.id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Resource updated successfully.',
+        'resource': resource.to_dict()
+    }), 200
+
+
+@app.route('/api/counsellor/resources/<int:resource_id>/status', methods=['PATCH'])
+@counsellor_required
+def counsellor_toggle_resource_status(resource_id):
+    resource = Resource.query.get(resource_id)
+
+    if not resource:
+        return jsonify({'error': 'Resource not found.'}), 404
+
+    data = request.get_json() or {}
+    if 'is_active' not in data or not isinstance(data['is_active'], bool):
+        return jsonify({'error': 'is_active must be true or false.'}), 400
+
+    resource.is_active = data['is_active']
+
+    create_system_log(
+        action='TOGGLE_RESOURCE_STATUS',
+        description=(
+            f'Changed resource "{resource.title}" '
+            f'to {"active" if resource.is_active else "inactive"}.'
+        ),
+        entity_type='Resource',
+        entity_id=resource.id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': (
+            'Resource activated successfully.'
+            if resource.is_active
+            else 'Resource deactivated successfully.'
+        ),
+        'resource': resource.to_dict()
+    }), 200
+
+
+@app.route('/api/counsellor/resources/<int:resource_id>', methods=['DELETE'])
+@counsellor_required
+def counsellor_delete_resource(resource_id):
+    resource = Resource.query.get(resource_id)
+
+    if not resource:
+        return jsonify({'error': 'Resource not found.'}), 404
+
+    resource_title = resource.title
+
+    db.session.delete(resource)
+
+    create_system_log(
+        action='DELETE_RESOURCE',
+        description=f'Deleted resource "{resource_title}".',
+        entity_type='Resource',
+        entity_id=resource_id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Resource deleted successfully.'
+    }), 200
 
 
 # ── GET /api/resources/recommended — personalize resources from latest check-in ──
@@ -3549,7 +3960,7 @@ def get_recommended_resources():
             # If an older record contains an unexpected value, keep risk-based ranking.
             pass
 
-        resources = Resource.query.all()
+        resources = Resource.query.filter_by(is_active=True).all()
 
         # Score each resource by category relevance, then keep a diverse set.
         scored = []
@@ -3621,6 +4032,27 @@ def get_recommended_resources():
             'error': 'Failed to load personalized resources',
             'details': str(e)
         }), 500
+
+
+# ============================================================
+# RESOURCE MANAGEMENT — SCHEMA COMPATIBILITY
+# ============================================================
+
+def ensure_resource_active_column():
+    """Add the is_active column to existing databases if needed."""
+    try:
+        inspector = inspect(db.engine)
+        columns = {column['name'] for column in inspector.get_columns('resources')}
+
+        if 'is_active' not in columns:
+            db.session.execute(text(
+                'ALTER TABLE resources ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE'
+            ))
+            db.session.commit()
+            print('✅ Added resources.is_active column')
+    except Exception as e:
+        db.session.rollback()
+        print('⚠️ Resource active-column migration skipped:', e)
 
 
 # ── Seed starter resources — call once from app context ────────
@@ -3723,23 +4155,6 @@ def seed_video_resources():
         print('ℹ️ Video resources already exist')
 
 
-def counsellor_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-
-        if 'user_id' not in session:
-            return jsonify({
-                'error': 'Login required'
-            }), 401
-
-        if session.get('user_role') != 'counsellor':
-            return jsonify({
-                'error': 'Counsellor access required'
-            }), 403
-
-        return f(*args, **kwargs)
-
-    return decorated
 
 # ============================================================
 # COUNSELLOR — ANONYMOUS CAMPUS ANALYTICS
@@ -6154,6 +6569,13 @@ def counsellor_restore_post(post_id):
         # Make the post visible on the community board again
         post.is_flagged = False
 
+        create_system_log(
+            action='RESTORE_COMMUNITY_POST',
+            description='Restored a flagged anonymous community post.',
+            entity_type='CommunityPost',
+            entity_id=post.id
+        )
+
         # Save notification before committing
         notification = Notification(
             user_id=post.user_id,
@@ -6230,6 +6652,14 @@ def counsellor_remove_post(post_id):
         )
 
         db.session.add(notification)
+
+        # Record moderation metadata before deleting the post.
+        create_system_log(
+            action='REMOVE_COMMUNITY_POST',
+            description='Removed a flagged anonymous community post.',
+            entity_type='CommunityPost',
+            entity_id=post.id
+        )
 
         # Delete the inappropriate post
         db.session.delete(post)
@@ -6347,6 +6777,16 @@ def login():
     session['user_name'] = user.name
     session.permanent    = True
 
+    create_system_log(
+        action='LOGIN',
+        description='User logged into MindEase.',
+        entity_type='User',
+        entity_id=user.id,
+        user_id=user.id,
+        user_role=user.role
+    )
+    db.session.commit()
+
     # ── Send user info back to React ──────────────────────────────
     return jsonify({
         'message': 'Login successful',
@@ -6360,6 +6800,20 @@ def login():
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
+    user_id = session.get('user_id')
+    user_role = session.get('user_role')
+
+    if user_id:
+        create_system_log(
+            action='LOGOUT',
+            description='User logged out of MindEase.',
+            entity_type='User',
+            entity_id=user_id,
+            user_id=user_id,
+            user_role=user_role
+        )
+        db.session.commit()
+
     session.clear()   # wipe all session data
     return jsonify({'message': 'Logged out successfully'}), 200
 
@@ -6632,6 +7086,467 @@ def update_profile():
             'details': str(e)
 
         }), 500
+
+# ════════════════════════════════════════════════════════════
+# ADMIN — EXERCISE CONTENT MANAGEMENT
+# ════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/exercises', methods=['GET'])
+@admin_required
+def admin_get_exercises():
+    query = Exercise.query
+
+    search = (request.args.get('search') or '').strip()
+    category = (request.args.get('category') or '').strip()
+    status = (request.args.get('status') or '').strip().lower()
+
+    if search:
+        like = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                Exercise.title.ilike(like),
+                Exercise.description.ilike(like),
+                Exercise.instructions.ilike(like)
+            )
+        )
+
+    if category and category != 'all':
+        query = query.filter_by(category=category)
+
+    if status == 'active':
+        query = query.filter_by(is_active=True)
+    elif status == 'inactive':
+        query = query.filter_by(is_active=False)
+
+    exercises = query.order_by(Exercise.created_at.desc()).all()
+
+    return jsonify([exercise.to_dict() for exercise in exercises]), 200
+
+
+@app.route('/api/admin/exercises', methods=['POST'])
+@admin_required
+def admin_create_exercise():
+    data = request.get_json() or {}
+
+    title = str(data.get('title', '')).strip()
+    description = str(data.get('description', '')).strip()
+    category = str(data.get('category', '')).strip()
+    instructions = str(data.get('instructions', '')).strip()
+
+    if not title or not description or not category or not instructions:
+        return jsonify({
+            'error': 'Title, description, category and instructions are required'
+        }), 400
+
+    exercise = Exercise(
+        title=title[:200],
+        description=description,
+        category=category[:60],
+        duration=str(data.get('duration', '')).strip()[:50] or None,
+        instructions=instructions,
+        icon=str(data.get('icon', '🧘')).strip()[:10] or '🧘',
+        media_url=str(data.get('media_url', '')).strip()[:500] or None,
+        is_active=bool(data.get('is_active', True))
+    )
+
+    db.session.add(exercise)
+
+    create_system_log(
+        action='CREATE_EXERCISE',
+        description=f'Created exercise "{exercise.title}".',
+        entity_type='Exercise',
+        entity_id=exercise.id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Exercise created successfully',
+        'exercise': exercise.to_dict()
+    }), 201
+
+
+@app.route('/api/admin/exercises/<int:exercise_id>', methods=['PUT'])
+@admin_required
+def admin_update_exercise(exercise_id):
+    exercise = Exercise.query.get(exercise_id)
+
+    if not exercise:
+        return jsonify({'error': 'Exercise not found'}), 404
+
+    data = request.get_json() or {}
+
+    title = str(data.get('title', exercise.title)).strip()
+    description = str(data.get('description', exercise.description)).strip()
+    category = str(data.get('category', exercise.category)).strip()
+    instructions = str(data.get('instructions', exercise.instructions)).strip()
+
+    if not title or not description or not category or not instructions:
+        return jsonify({
+            'error': 'Title, description, category and instructions are required'
+        }), 400
+
+    exercise.title = title[:200]
+    exercise.description = description
+    exercise.category = category[:60]
+    exercise.duration = str(data.get('duration', exercise.duration or '')).strip()[:50] or None
+    exercise.instructions = instructions
+    exercise.icon = str(data.get('icon', exercise.icon or '🧘')).strip()[:10] or '🧘'
+    exercise.media_url = str(data.get('media_url', exercise.media_url or '')).strip()[:500] or None
+
+    if 'is_active' in data:
+        exercise.is_active = bool(data['is_active'])
+
+    create_system_log(
+        action='UPDATE_EXERCISE',
+        description=f'Updated exercise "{exercise.title}".',
+        entity_type='Exercise',
+        entity_id=exercise.id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Exercise updated successfully',
+        'exercise': exercise.to_dict()
+    }), 200
+
+
+@app.route('/api/admin/exercises/<int:exercise_id>/status', methods=['PATCH'])
+@admin_required
+def admin_toggle_exercise(exercise_id):
+    exercise = Exercise.query.get(exercise_id)
+
+    if not exercise:
+        return jsonify({'error': 'Exercise not found'}), 404
+
+    data = request.get_json() or {}
+    if 'is_active' in data:
+        exercise.is_active = bool(data['is_active'])
+    else:
+        exercise.is_active = not exercise.is_active
+
+    create_system_log(
+        action='TOGGLE_EXERCISE_STATUS',
+        description=(
+            f'Changed exercise "{exercise.title}" '
+            f'to {"active" if exercise.is_active else "inactive"}.'
+        ),
+        entity_type='Exercise',
+        entity_id=exercise.id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Exercise status updated successfully',
+        'exercise': exercise.to_dict()
+    }), 200
+
+
+@app.route('/api/admin/exercises/<int:exercise_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_exercise(exercise_id):
+    exercise = Exercise.query.get(exercise_id)
+
+    if not exercise:
+        return jsonify({'error': 'Exercise not found'}), 404
+
+    exercise_title = exercise.title
+
+    db.session.delete(exercise)
+
+    create_system_log(
+        action='DELETE_EXERCISE',
+        description=f'Deleted exercise "{exercise_title}".',
+        entity_type='Exercise',
+        entity_id=exercise_id
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Exercise deleted successfully'
+    }), 200
+
+
+@app.route('/api/exercises', methods=['GET'])
+@login_required
+def get_active_exercises():
+    exercises = (
+        Exercise.query
+        .filter_by(is_active=True)
+        .order_by(Exercise.created_at.desc())
+        .all()
+    )
+
+    return jsonify([exercise.to_dict() for exercise in exercises]), 200
+
+
+
+# ════════════════════════════════════════════════════════════
+# ADMIN — CREATE NEW ADMINISTRATOR
+# ════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/admins', methods=['POST'])
+@admin_required
+def admin_create_admin():
+    """
+    Create a new administrator account.
+
+    This endpoint is intentionally separate from public registration.
+    Only an already authenticated administrator can create another admin.
+    """
+    try:
+        data = request.get_json() or {}
+
+        name = str(data.get('name', '')).strip()
+        email = str(data.get('email', '')).strip().lower()
+        password = str(data.get('password', ''))
+
+        # --------------------------------------------------------
+        # Validation
+        # --------------------------------------------------------
+        if not name or not email or not password:
+            return jsonify({
+                'error': 'Name, email and password are required'
+            }), 400
+
+        if len(name) > 100:
+            return jsonify({
+                'error': 'Name must be 100 characters or less'
+            }), 400
+
+        if len(email) > 150:
+            return jsonify({
+                'error': 'Email must be 150 characters or less'
+            }), 400
+
+        if len(password) < 6:
+            return jsonify({
+                'error': 'Password must be at least 6 characters'
+            }), 400
+
+        # Basic email validation
+        email_pattern = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+
+        if not re.match(email_pattern, email):
+            return jsonify({
+                'error': 'Please enter a valid email address'
+            }), 400
+
+        # --------------------------------------------------------
+        # Prevent duplicate accounts
+        # --------------------------------------------------------
+        existing = User.query.filter_by(email=email).first()
+
+        if existing:
+            return jsonify({
+                'error': 'An account with this email already exists'
+            }), 409
+
+        # --------------------------------------------------------
+        # Use the SAME bcrypt approach as public registration.
+        # --------------------------------------------------------
+        hashed = bcrypt.hashpw(
+            password.encode('utf-8'),
+            bcrypt.gensalt()
+        )
+
+        # --------------------------------------------------------
+        # Create administrator account
+        # --------------------------------------------------------
+        new_admin = User(
+            name=name,
+            email=email,
+            password=hashed.decode('utf-8'),
+            role='admin',
+            is_approved=True
+        )
+
+        db.session.add(new_admin)
+        db.session.commit()
+
+        # --------------------------------------------------------
+        # Add an audit entry after the user has an ID.
+        # Do not store the password in the log.
+        # --------------------------------------------------------
+        try:
+            create_system_log(
+                action='CREATE_ADMIN',
+                description=f'Created administrator account for "{new_admin.email}".',
+                entity_type='User',
+                entity_id=new_admin.id
+            )
+            db.session.commit()
+        except Exception as log_error:
+            # The admin was already created successfully.
+            # Do not undo account creation just because logging failed.
+            db.session.rollback()
+            print('⚠️ Create-admin audit log error:', log_error)
+
+        return jsonify({
+            'success': True,
+            'message': 'New administrator created successfully',
+            'admin': {
+                'id': new_admin.id,
+                'name': new_admin.name,
+                'email': new_admin.email,
+                'role': new_admin.role,
+                'is_approved': bool(new_admin.is_approved),
+                'created_at': (
+                    new_admin.created_at.isoformat()
+                    if new_admin.created_at else None
+                )
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+
+        print('❌ Create admin error:', e)
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to create administrator',
+            'details': str(e)
+        }), 500
+
+
+# ════════════════════════════════════════════════════════════
+# ADMIN — SYSTEM LOGS
+# ════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/system-logs', methods=['GET'])
+@admin_required
+def admin_get_system_logs():
+    """
+    Return non-sensitive audit metadata for administrators.
+
+    Supports:
+      ?search=
+      ?action=
+      ?role=
+      ?limit=50
+    """
+
+    try:
+        search = (request.args.get('search') or '').strip()
+        action = (request.args.get('action') or '').strip()
+        role = (request.args.get('role') or '').strip()
+        limit = request.args.get('limit', '100')
+
+        try:
+            limit = max(1, min(int(limit), 250))
+        except ValueError:
+            limit = 100
+
+        query = SystemLog.query
+
+        if action and action != 'all':
+            query = query.filter_by(action=action)
+
+        if role and role != 'all':
+            query = query.filter_by(user_role=role)
+
+        if search:
+            like = f'%{search}%'
+            query = query.filter(
+                db.or_(
+                    SystemLog.action.ilike(like),
+                    SystemLog.description.ilike(like),
+                    SystemLog.entity_type.ilike(like),
+                    SystemLog.ip_address.ilike(like)
+                )
+            )
+
+        logs = (
+            query
+            .order_by(SystemLog.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+        actions = [
+            row[0]
+            for row in (
+                db.session.query(SystemLog.action)
+                .filter(SystemLog.action.isnot(None))
+                .distinct()
+                .order_by(SystemLog.action.asc())
+                .all()
+            )
+        ]
+
+        return jsonify({
+            'success': True,
+            'logs': [log.to_dict() for log in logs],
+            'actions': actions,
+            'count': len(logs)
+        }), 200
+
+    except Exception as e:
+        print('❌ Admin system logs error:', e)
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load system logs'
+        }), 500
+
+
+@app.route('/api/admin/system-logs/summary', methods=['GET'])
+@admin_required
+def admin_system_logs_summary():
+    try:
+        total = SystemLog.query.count()
+
+        today_start = datetime.combine(
+            date.today(),
+            datetime.min.time()
+        )
+
+        today_count = (
+            SystemLog.query
+            .filter(SystemLog.created_at >= today_start)
+            .count()
+        )
+
+        admin_count = (
+            SystemLog.query
+            .filter_by(user_role='admin')
+            .count()
+        )
+
+        counsellor_count = (
+            SystemLog.query
+            .filter_by(user_role='counsellor')
+            .count()
+        )
+
+        student_count = (
+            SystemLog.query
+            .filter_by(user_role='student')
+            .count()
+        )
+
+        return jsonify({
+            'success': True,
+            'total': total,
+            'today': today_count,
+            'admin': admin_count,
+            'counsellor': counsellor_count,
+            'student': student_count
+        }), 200
+
+    except Exception as e:
+        print('❌ Admin system log summary error:', e)
+
+        return jsonify({
+            'success': False,
+            'error': 'Failed to load log summary'
+        }), 500
+
+
 # ADMIN — USER MANAGEMENT
 # ════════════════════════════════════════════════════════════
 
@@ -6685,6 +7600,14 @@ def approve_counsellor(user_id):
         }), 400
 
     counsellor.is_approved = True
+
+    create_system_log(
+        action='APPROVE_COUNSELLOR',
+        description=f'Approved counsellor account "{counsellor.name}".',
+        entity_type='User',
+        entity_id=counsellor.id
+    )
+
     db.session.commit()
 
     return jsonify({
@@ -6711,7 +7634,21 @@ def admin_delete_user(user_id):
             'error': 'User not found'
         }), 404
 
+    deleted_user_name = user.name
+    deleted_user_role = user.role
+
     db.session.delete(user)
+
+    create_system_log(
+        action='DELETE_USER',
+        description=(
+            f'Deleted user "{deleted_user_name}" '
+            f'with role "{deleted_user_role}".'
+        ),
+        entity_type='User',
+        entity_id=user_id
+    )
+
     db.session.commit()
 
     return jsonify({
@@ -6862,6 +7799,8 @@ def admin_analytics():
 
     }), 200
 
+    
+
 # Example usage of @login_required (you will use this from Day 9 onwards):
 # @app.route('/api/checkin', methods=['POST'])
 # @login_required
@@ -6877,6 +7816,7 @@ def admin_analytics():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        ensure_resource_active_column()
         seed_resources()
         seed_video_resources()
         print("✅ All database tables created in mindease_db")

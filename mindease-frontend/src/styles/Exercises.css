@@ -1175,3 +1175,99 @@
   }
 
 }
+
+/* ============================================================
+   ADMIN-MANAGED EXERCISES
+   Add these rules to Exercises.css
+   ============================================================ */
+
+.admin-exercise-library {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-exercise-card {
+  width: 100%;
+}
+
+.admin-exercise-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.admin-exercise-meta span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f0edfa;
+  color: #62567e;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.admin-exercise-content {
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f7f9f7;
+  color: #5d6260;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.admin-exercise-content p {
+  margin: 0;
+}
+
+.admin-exercise-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.admin-exercise-state {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid #e8e5ec;
+  border-radius: 16px;
+  background: #fff;
+  color: #77727b;
+  text-align: center;
+}
+
+.admin-exercise-state span {
+  font-size: 28px;
+}
+
+.admin-exercise-state p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.admin-exercise-state.error {
+  color: #a85d5d;
+  background: #fff7f7;
+  border-color: #efdada;
+}
+
+.admin-exercise-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #dff3e4;
+  border-top-color: #5d9a6b;
+  border-radius: 50%;
+  animation: admin-exercise-spin .8s linear infinite;
+}
+
+@keyframes admin-exercise-spin {
+  to { transform: rotate(360deg); }
+}

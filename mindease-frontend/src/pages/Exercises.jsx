@@ -1,5 +1,6 @@
 ﻿// src/pages/Exercises.jsx
 import { useState, useEffect, useRef } from 'react'
+import api from '../api/axios'
 import '../styles/Exercises.css'
 
 // ── Box Breathing Config ───────────────────────────────────────
@@ -277,6 +278,84 @@ function MuscleRelaxation() {
 // ── Main Exercises Page ────────────────────────────────────────
 export default function Exercises() {
   const [activeTab, setActiveTab] = useState('breathing')
+  const [adminExercises, setAdminExercises] = useState([])
+  const [adminExercisesLoading, setAdminExercisesLoading] = useState(true)
+  const [adminExercisesError, setAdminExercisesError] = useState('')
+
+  useEffect(() => {
+    const loadAdminExercises = async () => {
+      try {
+        setAdminExercisesLoading(true)
+        setAdminExercisesError('')
+
+        const response = await api.get('/exercises')
+
+        // Flask currently returns the exercise list directly:
+        // [ { id, title, description, category, duration,
+        //     instructions, icon, media_url, is_active, ... } ]
+        const exercises = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.exercises)
+            ? response.data.exercises
+            : []
+
+        setAdminExercises(exercises)
+      } catch (error) {
+        console.error(
+          'Failed to load exercises:',
+          error.response?.data || error.message || error
+        )
+
+        // If the request fails, clear the old list so the UI
+        // does not show an old count together with an error.
+        setAdminExercises([])
+        setAdminExercisesError(
+          error.response?.data?.error ||
+          'Unable to load additional exercises.'
+        )
+      } finally {
+        setAdminExercisesLoading(false)
+      }
+    }
+
+    loadAdminExercises()
+  }, [])
+
+  const renderAdminExercise = (exercise) => (
+    <div className="exercise-card admin-exercise-card" key={`admin-${exercise.id}`}>
+      <div className="exercise-card-header">
+        <h2>{exercise.icon || '🌿'} {exercise.title}</h2>
+        <p>{exercise.description}</p>
+      </div>
+
+      <div className="admin-exercise-meta">
+        <span>🏷 {exercise.category || 'Wellness'}</span>
+        {exercise.duration && (
+          <span>⏱ {exercise.duration}</span>
+        )}
+      </div>
+
+      {exercise.instructions && (
+        <div className="admin-exercise-content">
+          <strong>How to do it</strong>
+          <p>{exercise.instructions}</p>
+        </div>
+      )}
+
+      {exercise.media_url && (
+        <div className="exercise-actions">
+          <a
+            className="btn-primary admin-exercise-link"
+            href={exercise.media_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open Resource →
+          </a>
+        </div>
+      )}
+    </div>
+  )
 
   const TABS = [
     { id:'breathing',  label:'🌬 Box Breathing' },
@@ -299,11 +378,43 @@ export default function Exercises() {
             onClick={() => setActiveTab(tab.id)}
           >{tab.label}</button>
         ))}
+
+        {adminExercises.length > 0 && (
+          <button
+            className={`exercises-tab ${activeTab === 'library' ? 'active' : ''}`}
+            onClick={() => setActiveTab('library')}
+          >
+            📚 More Exercises ({adminExercises.length})
+          </button>
+        )}
       </div>
 
       {activeTab === 'breathing'  && <BoxBreathing />}
       {activeTab === 'grounding'  && <Grounding />}
       {activeTab === 'relaxation' && <MuscleRelaxation />}
+
+      {activeTab === 'library' && (
+        <div className="admin-exercise-library">
+          {adminExercisesLoading ? (
+            <div className="admin-exercise-state">
+              <div className="admin-exercise-spinner"></div>
+              <p>Loading wellness exercises...</p>
+            </div>
+          ) : adminExercisesError && adminExercises.length === 0 ? (
+            <div className="admin-exercise-state error">
+              <span>⚠️</span>
+              <p>{adminExercisesError}</p>
+            </div>
+          ) : adminExercises.length === 0 ? (
+            <div className="admin-exercise-state">
+              <span>🌿</span>
+              <p>No additional exercises are available right now.</p>
+            </div>
+          ) : (
+            adminExercises.map(renderAdminExercise)
+          )}
+        </div>
+      )}
     </div>
   )
 }

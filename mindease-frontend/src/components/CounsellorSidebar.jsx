@@ -30,6 +30,11 @@ export default function CounsellorSidebar() {
       label: 'Students'
     },
     {
+      path: '/counsellor-resources',
+      icon: '▦',
+      label: 'Resources'
+    },
+    {
       path: '/counsellor-reports',
       icon: '▤',
       label: 'Reports'
