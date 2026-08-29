@@ -19,7 +19,11 @@ import './styles/StudentAppLayout.css'
 // ============================================================
 
 import Login from './pages/Login'
-import Register from './pages/Register'
+
+import Register from './pages/register'
+import Welcome from './pages/Welcome'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 // ============================================================
 // STUDENT PAGES
@@ -106,17 +110,15 @@ function SmartRedirect() {
 
   const { currentUser } = useAuth()
 
-  // No user
   if (!currentUser) {
     return (
       <Navigate
-        to="/login"
+        to="/welcome"
         replace
       />
     )
   }
 
-  // Send user to correct dashboard
   return (
     <Navigate
       to={`/${currentUser.role}-dashboard`}
@@ -171,6 +173,11 @@ export default function App() {
         />
 
         <Route
+  path="/welcome"
+  element={<Welcome />}
+/>
+
+        <Route
           path="/login"
           element={<Login />}
         />
@@ -179,6 +186,16 @@ export default function App() {
           path="/register"
           element={<Register />}
         />
+
+        <Route
+  path="/forgot-password"
+  element={<ForgotPassword />}
+/>
+
+<Route
+  path="/reset-password"
+  element={<ResetPassword />}
+/>
 
 
         {/* ==================================================

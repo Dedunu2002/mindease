@@ -13,6 +13,7 @@ import pandas as pd
 import re
 import json
 import bcrypt
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from io import BytesIO
 
@@ -37,6 +38,16 @@ from apscheduler.triggers.cron import CronTrigger
 # ── Initialise app ────────────────────────────────────────────
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# ============================================================
+# PASSWORD RESET TOKEN
+# ============================================================
+
+def get_password_reset_serializer():
+
+    return URLSafeTimedSerializer(
+        app.config['SECRET_KEY']
+    )
 
 # ── CORS — allows React (port 3000) to call Flask (port 5000) ─
 # Without this, the browser blocks requests between the two servers
@@ -6797,7 +6808,192 @@ def login():
         }
     }), 200
 
+# ============================================================
+# FORGOT PASSWORD
+# ============================================================
 
+@app.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+
+    try:
+
+        data = request.get_json() or {}
+
+        email = (
+            data.get('email', '')
+            .strip()
+            .lower()
+        )
+
+        if not email:
+
+            return jsonify({
+                'error': 'Email address is required'
+            }), 400
+
+        user = User.query.filter_by(
+            email=email
+        ).first()
+
+        # Security-friendly response:
+        # do not reveal whether the email exists.
+        if not user:
+
+            return jsonify({
+                'message':
+                    'If an account exists for this email, '
+                    'a password reset link has been sent.'
+            }), 200
+
+        serializer = get_password_reset_serializer()
+
+        token = serializer.dumps(
+            {
+                'user_id': user.id,
+                'email': user.email
+            },
+            salt='mindease-password-reset'
+        )
+
+        reset_link = (
+            'http://localhost:3000/reset-password'
+            '?token='
+            + token
+        )
+
+        email_body = f"""
+Hello {user.name},
+
+We received a request to reset your MindEase password.
+
+Open the following link to create a new password:
+
+{reset_link}
+
+This reset link expires after 30 minutes.
+
+If you did not request a password reset, you can safely ignore this email.
+
+Regards,
+MindEase Student Wellbeing System
+"""
+
+        msg = Message(
+            subject='MindEase — Password Reset',
+            recipients=[user.email],
+            body=email_body
+        )
+
+        mail.send(msg)
+
+        return jsonify({
+            'message':
+                'If an account exists for this email, '
+                'a password reset link has been sent.'
+        }), 200
+
+    except Exception as e:
+
+        print('❌ Forgot password error:', e)
+
+        return jsonify({
+            'error':
+                'Unable to process the password reset request'
+        }), 500
+
+    # ============================================================
+# RESET PASSWORD
+# ============================================================
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+
+    try:
+
+        data = request.get_json() or {}
+
+        token = data.get('token', '')
+        new_password = data.get('password', '')
+
+        if not token:
+
+            return jsonify({
+                'error': 'Reset token is required'
+            }), 400
+
+        if len(new_password) < 6:
+
+            return jsonify({
+                'error':
+                    'Password must be at least 6 characters'
+            }), 400
+
+        serializer = get_password_reset_serializer()
+
+        try:
+
+            payload = serializer.loads(
+                token,
+                salt='mindease-password-reset',
+                max_age=1800
+            )
+
+        except SignatureExpired:
+
+            return jsonify({
+                'error':
+                    'This password reset link has expired'
+            }), 400
+
+        except BadSignature:
+
+            return jsonify({
+                'error':
+                    'Invalid password reset link'
+            }), 400
+
+        user_id = payload.get('user_id')
+        email = payload.get('email')
+
+        user = User.query.filter_by(
+            id=user_id,
+            email=email
+        ).first()
+
+        if not user:
+
+            return jsonify({
+                'error':
+                    'Unable to reset password'
+            }), 400
+
+        hashed_password = bcrypt.hashpw(
+            new_password.encode('utf-8'),
+            bcrypt.gensalt()
+        )
+
+        user.password = hashed_password.decode('utf-8')
+
+        db.session.commit()
+
+        return jsonify({
+            'message':
+                'Password reset successfully. '
+                'You can now sign in with your new password.'
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        print('❌ Reset password error:', e)
+
+        return jsonify({
+            'error':
+                'Unable to reset password'
+        }), 500
+
+    
 @app.route('/api/logout', methods=['POST'])
 def logout():
     user_id = session.get('user_id')
