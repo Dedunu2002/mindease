@@ -117,7 +117,7 @@ If a student expresses suicidal thoughts or thoughts of self-harm:
 
 - Respond with compassion.
 - Encourage immediate real-world support.
-- Provide the Sri Lankan Crisis Support Line: 1333.
+- Provide the Sri Lankan Crisis Support Line: 1926.
 - Encourage them to contact their university counsellor or a trusted
   person immediately.
 - If they are in immediate danger, encourage emergency assistance.
@@ -1305,7 +1305,7 @@ def chat():
         crisis_response = (
             "I can hear that you are going through a very "
             "difficult moment, and I am glad you reached out.\n\n"
-            "🆘 Sri Lanka Crisis Support Line: 1333\n\n"
+            "🆘 Sri Lanka Crisis Support Line: 1926\n\n"
             "Please contact someone you trust or your university "
             "counsellor right now. If you are in immediate danger, "
             "please seek emergency help in person immediately."
@@ -1366,7 +1366,7 @@ def chat():
             "I'm temporarily having trouble connecting to my AI service. "
             "Please try again in a moment. If you need immediate "
             "support, please contact the Sri Lankan Crisis Support "
-            "Line at 1333 or your university counsellor."
+            "Line at 1926 or your university counsellor."
         )
 
     # ── Save conversation ───────────────────────────────────

@@ -292,7 +292,7 @@ export default function Chat() {
               </strong>
 
               <span>
-                Please contact the Sri Lanka Crisis Support Line: 1333
+                Please contact the Sri Lanka Crisis Support Line: 1926
               </span>
 
             </div>

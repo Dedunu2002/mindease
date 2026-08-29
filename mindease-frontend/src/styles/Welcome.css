@@ -1,0 +1,369 @@
+/* ============================================================
+   MINDEASE WELCOME PAGE
+============================================================ */
+
+.welcome-page {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(116, 182, 153, 0.20),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(176, 211, 191, 0.22),
+      transparent 38%
+    ),
+    linear-gradient(
+      135deg,
+      #f4f8f5 0%,
+      #eef6f0 50%,
+      #f9fbfa 100%
+    );
+
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   BACKGROUND SHAPES
+============================================================ */
+
+.welcome-background-shape {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.welcome-shape-one {
+  width: 360px;
+  height: 360px;
+
+  top: -150px;
+  left: -140px;
+
+  background: rgba(74, 137, 105, 0.08);
+}
+
+.welcome-shape-two {
+  width: 420px;
+  height: 420px;
+
+  right: -190px;
+  bottom: -180px;
+
+  background: rgba(74, 137, 105, 0.07);
+}
+
+/* ============================================================
+   MAIN CONTAINER
+============================================================ */
+
+.welcome-container {
+  width: 100%;
+  max-width: 1080px;
+
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================
+   CARD
+============================================================ */
+
+.welcome-card {
+  width: 100%;
+
+  background: rgba(255, 255, 255, 0.84);
+
+  border: 1px solid rgba(255, 255, 255, 0.80);
+
+  border-radius: 32px;
+
+  box-shadow:
+    0 30px 80px rgba(30, 67, 48, 0.10),
+    0 8px 25px rgba(30, 67, 48, 0.05);
+
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  padding: 34px 42px 28px;
+
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   LOGO
+============================================================ */
+
+.welcome-logo {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  font-size: 21px;
+  font-weight: 700;
+
+  color: #1a7a5e;
+}
+
+.welcome-logo-mark {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 13px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #e7f3eb;
+
+  font-size: 20px;
+}
+
+/* ============================================================
+   CONTENT
+============================================================ */
+
+.welcome-content {
+  max-width: 720px;
+  margin: 90px auto 76px;
+
+  text-align: center;
+}
+
+.welcome-badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 8px 15px;
+
+  border-radius: 999px;
+
+  background: #eaf5ed;
+  color: #39765c;
+
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+
+  margin-bottom: 24px;
+}
+
+.welcome-content h1 {
+  margin: 0;
+
+  font-size: clamp(42px, 6vw, 72px);
+  line-height: 1.05;
+
+  letter-spacing: -2.5px;
+
+  color: #243d31;
+}
+
+.welcome-content h1 span {
+  color: #1a7a5e;
+}
+
+.welcome-content > p {
+  max-width: 650px;
+
+  margin: 24px auto 0;
+
+  color: #708078;
+
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  margin-top: 34px;
+}
+
+.welcome-btn {
+  min-width: 145px;
+
+  padding: 14px 24px;
+
+  border-radius: 13px;
+
+  text-align: center;
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 650;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.welcome-btn:hover {
+  transform: translateY(-2px);
+}
+
+.welcome-btn-primary {
+  background: #1a7a5e;
+  color: white;
+
+  box-shadow: 0 10px 25px rgba(26, 122, 94, 0.20);
+}
+
+.welcome-btn-primary:hover {
+  background: #155f4b;
+}
+
+.welcome-btn-secondary {
+  background: white;
+  color: #1a7a5e;
+
+  border: 1px solid #cfe2d6;
+}
+
+.welcome-btn-secondary:hover {
+  border-color: #9fc5ae;
+  box-shadow: 0 8px 20px rgba(26, 122, 94, 0.08);
+}
+
+/* ============================================================
+   FEATURES
+============================================================ */
+
+.welcome-features {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 22px;
+
+  margin-top: 44px;
+}
+
+.welcome-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #63736a;
+
+  font-size: 12px;
+}
+
+.welcome-feature span {
+  width: 20px;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #e7f3eb;
+  color: #39765c;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.welcome-feature p {
+  margin: 0;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.welcome-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+
+  color: #93a099;
+
+  font-size: 11px;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 768px) {
+
+  .welcome-page {
+    padding: 18px;
+  }
+
+  .welcome-card {
+    border-radius: 24px;
+    padding: 24px;
+  }
+
+  .welcome-content {
+    margin: 70px auto 56px;
+  }
+
+  .welcome-content h1 {
+    letter-spacing: -1.5px;
+  }
+
+  .welcome-content > p {
+    font-size: 14px;
+  }
+
+  .welcome-actions {
+    flex-direction: column;
+  }
+
+  .welcome-btn {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .welcome-features {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+}
+
+@media (max-width: 480px) {
+
+  .welcome-card {
+    padding: 20px;
+  }
+
+  .welcome-content {
+    margin-top: 55px;
+    margin-bottom: 45px;
+  }
+
+  .welcome-content h1 {
+    font-size: 40px;
+  }
+
+}
