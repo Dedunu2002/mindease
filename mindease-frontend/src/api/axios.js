@@ -15,7 +15,7 @@ const api = axios.create({
 
 export default api
 
-// ── How to use this in a page component: ──────────────────────
+
 // import api from '../api/axios'
 //
 // GET example (load data):
